@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Xilinx Zynq 7000 DTSI
- * Describes the hardware common to all Zynq 7000-based boards.
+ * Copyright (C) 2011-2022 Xilinx, Inc.
+ * Copyright (C) 2022 Advanced Micro Devices, Inc. All Rights Reserved.
  *
- *  Copyright (C) 2011 - 2015 Xilinx
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
 / {
 	#address-cells = <1>;
 	#size-cells = <1>;
 	compatible = "xlnx,zynq-7000";
-
-	options {
-		u-boot {
-			compatible = "u-boot,config";
-			bootscr-address = /bits/ 64 <0x3000000>;
-		};
-	};
 
 	cpus {
 		#address-cells = <1>;
@@ -44,7 +44,7 @@
 		};
 	};
 
-	fpga_full: fpga-region {
+	fpga_full: fpga-full {
 		compatible = "fpga-region";
 		fpga-mgr = <&devcfg>;
 		#address-cells = <1>;
@@ -56,8 +56,7 @@
 		compatible = "arm,cortex-a9-pmu";
 		interrupts = <0 5 4>, <0 6 4>;
 		interrupt-parent = <&intc>;
-		reg = <0xf8891000 0x1000>,
-		      <0xf8893000 0x1000>;
+		reg = < 0xf8891000 0x1000 0xf8893000 0x1000 >;
 	};
 
 	regulator_vccpint: fixedregulator {
@@ -103,7 +102,7 @@
 	};
 
 	amba: axi {
-		bootph-all;
+		u-boot,dm-pre-reloc;
 		compatible = "simple-bus";
 		#address-cells = <1>;
 		#size-cells = <1>;
@@ -160,7 +159,6 @@
 			clocks = <&clkc 38>;
 			interrupt-parent = <&intc>;
 			interrupts = <0 25 4>;
-			clock-frequency = <400000>;
 			reg = <0xe0004000 0x1000>;
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -172,7 +170,6 @@
 			clocks = <&clkc 39>;
 			interrupt-parent = <&intc>;
 			interrupts = <0 48 4>;
-			clock-frequency = <400000>;
 			reg = <0xe0005000 0x1000>;
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -204,12 +201,6 @@
 		ocm: sram@fffc0000 {
 			compatible = "mmio-sram";
 			reg = <0xfffc0000 0x10000>;
-			#address-cells = <1>;
-			#size-cells = <1>;
-			ranges = <0 0xfffc0000 0x10000>;
-			ocm-sram@0 {
-				reg = <0x0 0x10000>;
-			};
 		};
 
 		uart0: serial@e0000000 {
@@ -267,7 +258,7 @@
 		};
 
 		gem0: ethernet@e000b000 {
-			compatible = "xlnx,zynq-gem", "cdns,gem";
+            compatible = "xlnx,zynq-gem", "cdns,gem";
 			reg = <0xe000b000 0x1000>;
 			status = "disabled";
 			interrupts = <0 22 4>;
@@ -278,7 +269,7 @@
 		};
 
 		gem1: ethernet@e000c000 {
-			compatible = "xlnx,zynq-gem", "cdns,gem";
+            compatible = "xlnx,zynq-gem", "cdns,gem";
 			reg = <0xe000c000 0x1000>;
 			status = "disabled";
 			interrupts = <0 45 4>;
@@ -301,16 +292,19 @@
 			#size-cells = <1>;
 			interrupt-parent = <&intc>;
 			interrupts = <0 18 4>;
-
 			nfc0: nand-controller@0,0 {
 				compatible = "arm,pl353-nand-r2p1";
 				reg = <0 0 0x1000000>;
 				status = "disabled";
+				#address-cells = <0x1>;
+				#size-cells = <0x0>;
 			};
 			nor0: flash@1,0 {
 				status = "disabled";
 				compatible = "cfi-flash";
 				reg = <1 0 0x2000000>;
+				#address-cells = <1>;
+				#size-cells = <1>;
 			};
 		};
 
@@ -335,14 +329,14 @@
 		};
 
 		slcr: slcr@f8000000 {
-			bootph-all;
+			u-boot,dm-pre-reloc;
 			#address-cells = <1>;
 			#size-cells = <1>;
 			compatible = "xlnx,zynq-slcr", "syscon", "simple-mfd";
 			reg = <0xF8000000 0x1000>;
 			ranges;
 			clkc: clkc@100 {
-				bootph-all;
+				u-boot,dm-pre-reloc;
 				#clock-cells = <1>;
 				compatible = "xlnx,ps7-clkc";
 				fclk-enable = <0xf>;
@@ -374,11 +368,11 @@
 			};
 		};
 
-		dmac_s: dma-controller@f8003000 {
+        dmac_s: dma-controller@f8003000 {
 			compatible = "arm,pl330", "arm,primecell";
 			reg = <0xf8003000 0x1000>;
 			interrupt-parent = <&intc>;
-			/*
+            /*
 			 * interrupt-names = "abort", "dma0", "dma1", "dma2", "dma3",
 			 * "dma4", "dma5", "dma6", "dma7";
 			 */
@@ -432,7 +426,6 @@
 		};
 
 		scutimer: timer@f8f00600 {
-			bootph-all;
 			interrupt-parent = <&intc>;
 			interrupts = <1 13 0x301>;
 			compatible = "arm,cortex-a9-twd-timer";
