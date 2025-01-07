@@ -1,0 +1,290 @@
+///include/ "system-conf.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/media/xilinx-vip.h>
+#include <dt-bindings/phy/phy.h>
+
+/ {
+	model = "Zynq7000";
+	compatible = "xlnx,zynq-zc702", "xlnx,zynq-7000";
+	chosen {
+		bootargs = "console=ttyPS0,115200  cma=50M earlycon root=/dev/mmcblk1p1 rw rootwait";
+		stdout-path = "serial0:115200n8";
+	};
+
+    leds {
+		compatible = "gpio-leds";
+
+		gpio-led1 {
+			label = "pl_led1";
+			gpios = <&axi_gpio_0 0 0 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "heartbeat";
+			
+		};
+
+		gpio-led2 {
+			label = "pl_led2";
+			gpios = <&axi_gpio_0 1 0 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+
+	};
+
+	userled {
+		compatible = "user-gpio";
+		default-state = "on";
+		gpios = <&axi_gpio_0 2 0 GPIO_ACTIVE_HIGH>;
+	};
+
+	keys {
+		compatible = "gpio-keys";
+		autorepeat;
+
+		gpio-key1 {
+			label = "pl_key";
+			status = "okay";
+			gpios = <&gpio0 54 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_ENTER>;
+			gpio-key,wakeup;
+			autorepeat;
+		};
+
+		gpio-key2 {
+			label = "ps_key1";
+			status = "okay";
+			gpios = <&gpio0 50 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_LEFT>;
+			gpio-key,wakeup;
+			autorepeat;	
+		
+			};
+
+		// gpio-key3 {
+		// 	label = "ps_key2";
+		// 	status = "okay";
+		// 	gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;
+		// 	linux,code = <KEY_RIGHT>;
+		// 	gpio-key,wakeup;
+		// 	autorepeat;
+
+		// 	};
+
+	};
+
+	userkey {
+			compatible = "Pie,key";
+			status = "okay";
+			gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;
+
+	};
+
+	usb_phy0: phy0@e0002000 {
+		compatible = "ulpi-phy";
+		#phy-cells = <0>;
+		reg = <0xe0002000 0x1000>;
+		view-port = <0x0170>;
+		drv-vbus;
+	};
+};
+
+&uart1{
+	u-boot,dm-pre-reloc;
+	status = "okay";
+};
+
+&sdhci0 {
+	u-boot,dm-pre-reloc;
+	status = "okay";
+};
+
+&sdhci1 {
+	status = "okay";
+};
+
+&usb0 {
+	dr_mode = "host";
+	usb-phy = <&usb_phy0>;
+};
+
+&qspi {
+	u-boot,dm-pre-reloc;
+	flash@0 { /* 16 MB */
+		compatible = "w25q256", "jedec,spi-nor";
+		reg = <0x0>;
+		spi-max-frequency = <50000000>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		partition@0x00000000 {
+			label = "boot";
+			reg = <0x00000000 0x00100000>;
+		};
+		partition@0x00100000 {
+			label = "bootenv";
+			reg = <0x00100000 0x00020000>;
+		};
+		partition@0x00120000 {
+			label = "bitstream";
+			reg = <0x00120000 0x00400000>;
+		};
+		partition@0x00520000 {
+			label = "device-tree";
+			reg = <0x00520000 0x00020000>;
+		};
+		partition@0x00540000 {
+			label = "kernel";
+			reg = <0x00540000 0x00500000>;
+		};
+		partition@0x00A40000 {
+			label = "space";
+			reg = <0x00A40000 0x00000000>;
+		};
+	};
+};
+
+&gem0 {
+	local-mac-address = [00 0a 35 00 8b 87];
+
+	phy-handle = <&ethernet_phy>;
+	ethernet_phy: ethernet-phy@1 {
+		reg = <0x1>;
+		device_type = "ethernet-phy";
+	};
+};
+
+
+&watchdog0 {
+	status = "okay";
+	reset-on-timeout;		// Enable watchdog reset function
+};
+
+&adc {
+	status = "okay";
+
+	xlnx,channels {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		channel@0 {
+			reg = <0>;
+		};
+	};
+};
+
+&i2c1 {
+	clock-frequency = <200000>;
+
+
+	rtc@51 {
+		compatible = "nxp,pcf8563";
+		reg = <0x51>;
+	};
+
+	codec: wm8960@1a {
+		compatible = "wlf,wm8960";
+		reg = <0x1a>;
+		#sound-dai-cells = <0>;
+		wlf,shared-lrclk;
+		clock-names = "mclk";
+		clocks = <&clk_wiz_0 0>;
+	};
+};
+
+&i2c0 {
+	clock-frequency = <100000>;
+
+	ov2640@31 {
+		compatible = "ovati,ov2640";
+		reg = <0x31>;
+	};
+};
+
+&IIC_CAM {
+
+	ov5647@36 {
+		compatible = "ovti,ov5647";
+		reg = <0x36>;
+		rst-gpios = <&gpio0 56 GPIO_ACTIVE_LOW>;
+
+		status = "okay";
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+
+			ov5647_ep: endpoint {
+				remote-endpoint = <&mipi_csi_incamera_in_mipi_csi2_rx_subsyst_0>;
+			};
+		};
+	};
+};
+
+&audio_audio_formatter{
+	xlnx,tx = <&audio_i2s_transmitter>;
+	xlnx,rx = <&audio_i2s_receiver>;
+	audio-codec = <&codec>;
+};
+
+&clk_wiz_0 {
+    compatible = "xlnx,clocking-wizard";
+    xlnx,nr-outputs = <1>;
+};
+
+
+&hdmi_out_clk_wiz_dyn{
+    compatible = "xlnx,clocking-wizard";
+    xlnx,nr-outputs = <2>;
+};
+
+&hdmi_out_hdmi_vtc {
+	compatible = "xlnx,bridge-v-tc-6.1";
+	xlnx,pixels-per-clock = <1>;
+};
+
+
+&amba_pl {
+
+	drm_pl_disp_hdmi {
+		compatible = "xlnx,pl-disp";
+		dmas = <&hdmi_out_v_frmbuf_rd_0 0>;
+		dma-names = "dma0";
+		xlnx,vformat = "BG24";
+		xlnx,bridge = <&hdmi_out_hdmi_vtc>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				reg = <0>;
+				pl_disp_crtc_hdmi:endpoint {
+					remote-endpoint = <&hdmi_encoder>;
+				};
+			};
+		};
+	};
+
+	atk_hdmi_drm{
+		
+		compatible = "atk,atk-hdmi";
+		status = "okay";
+
+		clocks = <&hdmi_out_clk_wiz_dyn 0>, <&hdmi_out_clk_wiz_dyn 1>;
+		clock-names = "hdmi_pclk", "hdmi_pclk_5x";
+    	clk-num = <2>;															//时钟数
+		ddc-i2c-bus = <&i2c0>;
+		hpd-gpios = <&gpio0 55 GPIO_ACTIVE_HIGH>;
+
+		ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+			port@0 {
+				reg = <0>;
+				hdmi_encoder: endpoint {
+					remote-endpoint = <&pl_disp_crtc_hdmi>;
+				};
+			};
+		};
+	};
+};
