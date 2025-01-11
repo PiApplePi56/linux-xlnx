@@ -78,7 +78,7 @@
 			gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;
 
 	};
-
+ 
 	usb_phy0: phy0@e0002000 {
 		compatible = "ulpi-phy";
 		#phy-cells = <0>;
@@ -115,29 +115,29 @@
 		spi-max-frequency = <50000000>;
 		#address-cells = <1>;
 		#size-cells = <1>;
-		partition@0x00000000 {
-			label = "boot";
-			reg = <0x00000000 0x00100000>;
+		partition@0 {
+		    label = "boot";
+		    reg = <0x00000000 0x00100000>; /* 1 MB */
 		};
-		partition@0x00100000 {
-			label = "bootenv";
-			reg = <0x00100000 0x00020000>;
+		partition@100000 {
+		    label = "bootenv";
+		    reg = <0x00100000 0x00020000>; /* 128 KB */
 		};
-		partition@0x00120000 {
-			label = "bitstream";
-			reg = <0x00120000 0x00400000>;
+		partition@120000 {
+		    label = "bitstream";
+		    reg = <0x00120000 0x00400000>; /* 4 MB */
 		};
-		partition@0x00520000 {
-			label = "device-tree";
-			reg = <0x00520000 0x00020000>;
+		partition@520000 {
+		    label = "device-tree";
+		    reg = <0x00520000 0x00020000>; /* 128 KB */
 		};
-		partition@0x00540000 {
-			label = "kernel";
-			reg = <0x00540000 0x00500000>;
+		partition@540000 {
+		    label = "kernel";
+		    reg = <0x00540000 0x00A80000>; /* 10 MB */
 		};
-		partition@0x00A40000 {
-			label = "space";
-			reg = <0x00A40000 0x00000000>;
+		partition@f40000 {
+		    label = "space";
+		    reg = <0x00FC0000 0x00000000>; /* remainder up to 32 MB total */
 		};
 	};
 };
@@ -172,8 +172,6 @@
 };
 
 &i2c1 {
-	clock-frequency = <200000>;
-
 
 	rtc@51 {
 		compatible = "nxp,pcf8563";
@@ -191,23 +189,16 @@
 };
 
 &i2c0 {
-	clock-frequency = <100000>;
 
-	ov2640@31 {
-		compatible = "ovati,ov2640";
-		reg = <0x31>;
-	};
 };
 
-&IIC_CAM {
+&i2c_camera {
 
 	ov5647@36 {
 		compatible = "ovti,ov5647";
 		reg = <0x36>;
-		rst-gpios = <&gpio0 56 GPIO_ACTIVE_LOW>;
-
+		pwdn-gpios = <&gpio0 56 GPIO_ACTIVE_HIGH>;
 		status = "okay";
-
 		#address-cells = <1>;
 		#size-cells = <0>;
 
@@ -215,7 +206,7 @@
 			reg = <0>;
 
 			ov5647_ep: endpoint {
-				remote-endpoint = <&mipi_csi_incamera_in_mipi_csi2_rx_subsyst_0>;
+				remote-endpoint = <&mipi_csi_incamera_in_csi2_rx>;
 			};
 		};
 	};
@@ -265,14 +256,14 @@
 		};
 	};
 
-	atk_hdmi_drm{
+	hdmi_drm{
 		
-		compatible = "atk,atk-hdmi";
+		compatible = "digilent,dglnt-hdmi";
 		status = "okay";
 
 		clocks = <&hdmi_out_clk_wiz_dyn 0>, <&hdmi_out_clk_wiz_dyn 1>;
 		clock-names = "hdmi_pclk", "hdmi_pclk_5x";
-    	clk-num = <2>;															//时钟数
+    	clk-num = <2>;															
 		ddc-i2c-bus = <&i2c0>;
 		hpd-gpios = <&gpio0 55 GPIO_ACTIVE_HIGH>;
 
