@@ -99,7 +99,6 @@ struct ov5647 {
 	struct v4l2_subdev		sd;
 	struct media_pad		pad;
 	struct mutex			lock;
-	struct clk			*xclk;
 	struct gpio_desc		*pwdn;
 	bool				clock_ncont;
 	struct v4l2_ctrl_handler	ctrls;
@@ -762,12 +761,6 @@ static int ov5647_power_on(struct device *dev)
 		msleep(PWDN_ACTIVE_DELAY_MS);
 	}
 
-	ret = clk_prepare_enable(sensor->xclk);
-	if (ret < 0) {
-		dev_err(dev, "clk prepare enable failed\n");
-		goto error_pwdn;
-	}
-
 	ret = ov5647_write_array(&sensor->sd, sensor_oe_enable_regs,
 				 ARRAY_SIZE(sensor_oe_enable_regs));
 	if (ret < 0) {
@@ -785,7 +778,6 @@ static int ov5647_power_on(struct device *dev)
 	return 0;
 
 error_clk_disable:
-	clk_disable_unprepare(sensor->xclk);
 error_pwdn:
 	gpiod_set_value_cansleep(sensor->pwdn, 1);
 
@@ -815,7 +807,6 @@ static int ov5647_power_off(struct device *dev)
 	if (ret < 0)
 		dev_dbg(dev, "software standby failed\n");
 
-	clk_disable_unprepare(sensor->xclk);
 	gpiod_set_value_cansleep(sensor->pwdn, 1);
 
 	return 0;
@@ -1362,7 +1353,6 @@ static int ov5647_probe(struct i2c_client *client)
 	struct device *dev = &client->dev;
 	struct ov5647 *sensor;
 	struct v4l2_subdev *sd;
-	u32 xclk_freq;
 	int ret;
 
 	sensor = devm_kzalloc(dev, sizeof(*sensor), GFP_KERNEL);
@@ -1375,18 +1365,6 @@ static int ov5647_probe(struct i2c_client *client)
 			dev_err(dev, "DT parsing error: %d\n", ret);
 			return ret;
 		}
-	}
-
-	sensor->xclk = devm_clk_get(dev, NULL);
-	if (IS_ERR(sensor->xclk)) {
-		dev_err(dev, "could not get xclk");
-		return PTR_ERR(sensor->xclk);
-	}
-
-	xclk_freq = clk_get_rate(sensor->xclk);
-	if (xclk_freq != 25000000) {
-		dev_err(dev, "Unsupported clock frequency: %u\n", xclk_freq);
-		return -EINVAL;
 	}
 
 	/* Request the power down GPIO asserted. */
