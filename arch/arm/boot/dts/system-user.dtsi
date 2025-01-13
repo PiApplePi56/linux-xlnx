@@ -190,26 +190,31 @@
 
 &i2c0 {
 
+	ov2640@60 {
+		compatible = "ovti,ov2640";
+		reg = <0x60>;
+	};
+
 };
 
 &i2c_camera {
 
-	ov5647@36 {
-		compatible = "ovti,ov5647";
-		reg = <0x36>;
-		pwdn-gpios = <&gpio0 56 GPIO_ACTIVE_HIGH>;
-		status = "okay";
-		#address-cells = <1>;
-		#size-cells = <0>;
+	// ov5647@36 {
+	// 	compatible = "ovti,ov5647";
+	// 	reg = <0x36>;
+	// 	pwdn-gpios = <&gpio0 56 GPIO_ACTIVE_HIGH>;
+	// 	status = "okay";
+	// 	#address-cells = <1>;
+	// 	#size-cells = <0>;
 
-		port@0 {
-			reg = <0>;
+	// 	port@0 {
+	// 		reg = <0>;
 
-			ov5647_ep: endpoint {
-				remote-endpoint = <&mipi_csi_incamera_in_csi2_rx>;
-			};
-		};
-	};
+	// 		ov5647_ep: endpoint {
+	// 			remote-endpoint = <&mipi_csi_incamera_in_csi2_rx>;
+	// 		};
+	// 	};
+	// };
 };
 
 &audio_audio_formatter{
@@ -258,10 +263,10 @@
 
 	hdmi_drm{
 		
-		compatible = "digilent,dglnt-hdmi";
+		compatible = "dglnt,dglnt-hdmi";
 		status = "okay";
 
-		clocks = <&hdmi_out_clk_wiz_dyn 0>, <&hdmi_out_clk_wiz_dyn 1>;
+		clocks = <&misc_clk_1>, <&misc_clk_2>;
 		clock-names = "hdmi_pclk", "hdmi_pclk_5x";
     	clk-num = <2>;															
 		ddc-i2c-bus = <&i2c0>;

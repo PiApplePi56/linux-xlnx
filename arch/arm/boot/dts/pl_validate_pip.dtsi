@@ -122,7 +122,7 @@
 			#dma-cells = <1>;
 			clock-names = "ap_clk";
 			clocks = <&clkc 16>;
-			compatible = "xlnx,v-frmbuf-wr-2.4", "xlnx,axi-frmbuf-wr-v2.2";
+			compatible = "xlnx,axi-frmbuf-wr-v2.2";
 			interrupt-names = "interrupt";
 			interrupt-parent = <&intc>;
 			interrupts = <0 31 4>;
@@ -156,6 +156,16 @@
 			csc_portscamera_in_vpss: ports {
 				#address-cells = <1>;
 				#size-cells = <0>;
+				csc_port0camera_in_vpss: port@0 { 
+					//port 0 must declare first, or it will cause kernel panic
+					/* For xlnx,video-format user needs to fill as per their requirement */
+					reg = <0>;
+					xlnx,video-format = <XVIP_VF_XBGR>;
+					xlnx,video-width = <10>;
+					camera_in_vpss_tpg_out: endpoint {
+						remote-endpoint = <&tpg_out>;
+					};
+				};
 				csc_port1camera_in_vpss: port@1 {
 					/* For xlnx,video-format user needs to fill as per their requirement */
 					reg = <1>;
@@ -165,21 +175,12 @@
 						remote-endpoint = <&camera_in_frmbuf_wrcamera_in_vpss>;
 					};
 				};
-				csc_port0camera_in_vpss: port@0 {
-					/* For xlnx,video-format user needs to fill as per their requirement */
-					reg = <0>;
-					xlnx,video-format = <XVIP_VF_XBGR>;
-					xlnx,video-width = <10>;
-					camera_in_vpss_tpg_out: endpoint {
-						remote-endpoint = <&tpg_out>;
-					};
-				};
 			};
 		};
 		clk_wiz_0: clk_wiz@43c30000 {
 			#clock-cells = <1>;
 			clock-names = "s_axi_aclk", "clk_in1";
-			clock-output-names = "0x43c30000-mlck";
+			clock-output-names = "audio-mlck";
 			clocks = <&clkc 15>, <&clkc 15>;
 			compatible = "xlnx,clk-wiz-6.0", "xlnx,clocking-wizard";
 			reg = <0x43c30000 0x10000>;
@@ -189,7 +190,7 @@
 		hdmi_out_clk_wiz_dyn: clk_wiz@43c80000 {
 			#clock-cells = <1>;
 			clock-names = "s_axi_aclk", "clk_in1";
-			clock-output-names = "0x43c80000-hdmi_pclk", "0x43c80000-hdmi_pclk_5x";
+			clock-output-names = "video-hdmi_pclk", "video-hdmi_pclk_5x";
 			clocks = <&clkc 15>, <&clkc 15>;
 			compatible = "xlnx,clk-wiz-6.0", "xlnx,clocking-wizard";
 			reg = <0x43c80000 0x10000>;
@@ -211,11 +212,16 @@
 			clock-frequency = <148500000>;
 			compatible = "fixed-clock";
 		};
+		misc_clk_2: misc_clk_2 {
+			#clock-cells = <0>;
+			clock-frequency = <742500000>;
+			compatible = "fixed-clock";
+		};
 		hdmi_out_v_frmbuf_rd_0: v_frmbuf_rd@43ca0000 {
 			#dma-cells = <1>;
 			clock-names = "ap_clk";
 			clocks = <&misc_clk_1>;
-			compatible = "xlnx,v-frmbuf-rd-2.4", "xlnx,axi-frmbuf-rd-v2.2";
+			compatible = "xlnx,axi-frmbuf-rd-v2.2";
 			interrupt-names = "interrupt";
 			interrupt-parent = <&intc>;
 			interrupts = <0 52 4>;
@@ -246,7 +252,7 @@
 			#gpio-cells = <2>;
 			clock-names = "s_axi_aclk";
 			clocks = <&clkc 15>;
-			compatible = "xlnx,axi-gpio-2.0", "xlnx,xps-gpio-1.00.a";
+			compatible = "xlnx,xps-gpio-1.00.a";
 			gpio-controller ;
 			reg = <0x41220000 0x10000>;
 			xlnx,all-inputs = <0x0>;

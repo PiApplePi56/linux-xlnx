@@ -7,7 +7,7 @@
 
 /dts-v1/;
 #include "zynq-7000.dtsi"
-#include "pl_release.dtsi"
+#include "pl_validate_pip.dtsi"
 #include "pcw.dtsi"
 / {
 	chosen {
