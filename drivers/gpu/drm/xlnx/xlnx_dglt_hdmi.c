@@ -24,7 +24,7 @@
 #include <linux/platform_device.h>
 #include <linux/wait.h>
 
-#include <drm/drmP.h>
+#include <drm/drm_device.h>
 #include <drm/drm_of.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_atomic_helper.h>
@@ -60,7 +60,7 @@ struct dglnt_hdmi {
 
 /* List of clocks required by HDMI tx subsystem */
 static const char * const hdmi_clks[] = {
-	"hdmi_pclk", "hdmi_pclk_5x", "hdmi_pclk_2_5x",
+	"hdmi_pclk", "hdmi_pclk_5x", 
 };
 
 static inline struct dglnt_hdmi *encoder_to_hdmi(struct drm_encoder *e)
@@ -135,7 +135,7 @@ static enum drm_mode_status hdmi_mode_valid(struct drm_connector *connector,
        (mode->clock <= DIGILENT_ENC_MAX_FREQ) &&
        (mode->hdisplay <= DIGILENT_ENC_MAX_H) &&
        (mode->vdisplay <= DIGILENT_ENC_MAX_V) &&
-	   (mode->vrefresh <= DIGILENT_ENC_REFRESH_RATE)){
+	   (drm_mode_vrefresh(mode) <= DIGILENT_ENC_REFRESH_RATE)){
         return MODE_OK;
     }
 
@@ -360,7 +360,16 @@ static int hdmi_resources_init(struct dglnt_hdmi *hdmi)
 
 	ret = devm_clk_bulk_get(dev, hdmi->num_clks, hdmi->clks);
 	if (ret){
-		DRM_DEV_ERROR(dev, "failed to get hdmi pclks\n");
+		DRM_DEV_ERROR(dev, "failed to get hdmi pclks, ret= %d\n", ret);
+		for (i = 0; i < hdmi->num_clks; i++) {
+			if (IS_ERR(hdmi->clks[i].clk)) {
+				DRM_DEV_ERROR(dev, "Clock %s acquisition error: %ld\n",
+						  hdmi->clks[i].id, PTR_ERR(hdmi->clks[i].clk));
+			} else {
+				dev_info(dev, "Clock %s rate: %lu Hz\n",
+						  hdmi->clks[i].id, clk_get_rate(hdmi->clks[i].clk));
+			}
+		}
 		return ret;
 	}
 
@@ -425,7 +434,7 @@ static int hdmi_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id hdmi_of_match[] = {
-	{ .compatible = "digilent,dglnt-hdmi" },
+	{ .compatible = "dglnt,dglnt-hdmi" },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, hdmi_of_match);

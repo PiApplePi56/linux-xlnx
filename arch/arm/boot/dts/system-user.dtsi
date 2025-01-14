@@ -8,7 +8,7 @@
 	model = "Zynq7000";
 	compatible = "xlnx,zynq-zc702", "xlnx,zynq-7000";
 	chosen {
-		bootargs = "console=ttyPS0,115200  cma=50M earlycon root=/dev/mmcblk1p1 rw rootwait";
+		bootargs = "console=ttyPS0,115200 earlycon cma=64M root=/dev/mmcblk1p1 rw rootwait";
 		stdout-path = "serial0:115200n8";
 	};
 
@@ -188,10 +188,6 @@
 	};
 };
 
-&i2c0 {
-
-};
-
 &i2c_camera {
 
 	ov5647@36 {
@@ -258,10 +254,10 @@
 
 	hdmi_drm{
 		
-		compatible = "digilent,dglnt-hdmi";
+		compatible = "dglnt,dglnt-hdmi";
 		status = "okay";
 
-		clocks = <&hdmi_out_clk_wiz_dyn 0>, <&hdmi_out_clk_wiz_dyn 1>;
+		clocks = <&misc_clk_1>, <&misc_clk_2>;
 		clock-names = "hdmi_pclk", "hdmi_pclk_5x";
     	clk-num = <2>;															
 		ddc-i2c-bus = <&i2c0>;

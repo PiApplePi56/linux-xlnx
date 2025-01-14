@@ -162,4 +162,4 @@ config DRM_XLNX_DGLNT_HDMI
 	tristate "Digilent HDMI DRM TX Driver"
 	depends on DRM_XLNX
 	help
-	  HDMI DRM slave encoder for Video-out on Alientek boards.
+	  HDMI DRM slave encoder for Digilent DVI-Transmitter.

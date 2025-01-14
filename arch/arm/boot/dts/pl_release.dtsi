@@ -92,7 +92,7 @@
 		camera_in_csi2_rx: mipi_csi2_rx_subsystem@43c00000 {
 			clock-names = "lite_aclk", "dphy_clk_200M", "video_aclk";
 			clocks = <&clkc 15>, <&clkc 17>, <&clkc 16>;
-			compatible = "xlnx,mipi-csi2-rx-subsystem-5.3", "xlnx,mipi-csi2-rx-subsystem-5.0";
+			compatible = "xlnx,mipi-csi2-rx-subsystem-5.0";
 			interrupt-names = "csirxss_csi_irq";
 			interrupt-parent = <&intc>;
 			interrupts = <0 54 4>;
@@ -108,16 +108,6 @@
 			mipi_csi_portscamera_in_csi2_rx: ports {
 				#address-cells = <1>;
 				#size-cells = <0>;
-				mipi_csi_port1camera_in_csi2_rx: port@1 {
-					/* Fill cfa-pattern=rggb for raw data types, other fields video-format and video-width user needs to fill */
-					reg = <1>;
-					xlnx,cfa-pattern = "rggb";
-					xlnx,video-format = <XVIP_VF_MONO_SENSOR>;
-					xlnx,video-width = <10>;
-					mipi_csirx_outcamera_in_csi2_rx: endpoint {
-						remote-endpoint = <&camera_in_demosaiccamera_in_csi2_rx>;
-					};
-				};
 				mipi_csi_port0camera_in_csi2_rx: port@0 {
 					/* Fill cfa-pattern=rggb for raw data types, other fields video-format,video-width user needs to fill */
 					/* User need to add something like remote-endpoint=<&out> under the node csiss_in:endpoint */
@@ -128,6 +118,16 @@
 					mipi_csi_incamera_in_csi2_rx: endpoint {
 						data-lanes = <1 2 3 4>;
 						remote-endpoint=<&ov5647_ep>;
+					};
+				};
+				mipi_csi_port1camera_in_csi2_rx: port@1 {
+					/* Fill cfa-pattern=rggb for raw data types, other fields video-format and video-width user needs to fill */
+					reg = <1>;
+					xlnx,cfa-pattern = "rggb";
+					xlnx,video-format = <XVIP_VF_MONO_SENSOR>;
+					xlnx,video-width = <10>;
+					mipi_csirx_outcamera_in_csi2_rx: endpoint {
+						remote-endpoint = <&camera_in_demosaiccamera_in_csi2_rx>;
 					};
 				};
 			};
@@ -148,15 +148,6 @@
 			demosaic_portscamera_in_demosaic: ports {
 				#address-cells = <1>;
 				#size-cells = <0>;
-				demosaic_port1camera_in_demosaic: port@1 {
-					/* For cfa-pattern=rggb user needs to fill as per BAYER format */
-					reg = <1>;
-					xlnx,cfa-pattern = "rggb";
-					xlnx,video-width = <10>;
-					demo_outcamera_in_demosaic: endpoint {
-						remote-endpoint = <&camera_in_gamma_lutcamera_in_demosaic>;
-					};
-				};
 				demosaic_port0camera_in_demosaic: port@0 {
 					/* For cfa-pattern=rggb user needs to fill as per BAYER format */
 					reg = <0>;
@@ -164,6 +155,15 @@
 					xlnx,video-width = <10>;
 					camera_in_demosaiccamera_in_csi2_rx: endpoint {
 						remote-endpoint = <&mipi_csirx_outcamera_in_csi2_rx>;
+					};
+				};
+				demosaic_port1camera_in_demosaic: port@1 {
+					/* For cfa-pattern=rggb user needs to fill as per BAYER format */
+					reg = <1>;
+					xlnx,cfa-pattern = "rggb";
+					xlnx,video-width = <10>;
+					demo_outcamera_in_demosaic: endpoint {
+						remote-endpoint = <&camera_in_gamma_lutcamera_in_demosaic>;
 					};
 				};
 			};
@@ -204,18 +204,18 @@
 			gamma_portscamera_in_gamma_lut: ports {
 				#address-cells = <1>;
 				#size-cells = <0>;
-				gamma_port1camera_in_gamma_lut: port@1 {
-					reg = <1>;
-					xlnx,video-width = <10>;
-					gamma_outcamera_in_gamma_lut: endpoint {
-						remote-endpoint = <&camera_in_vpsscamera_in_gamma_lut>;
-					};
-				};
 				gamma_port0camera_in_gamma_lut: port@0 {
 					reg = <0>;
 					xlnx,video-width = <10>;
 					camera_in_gamma_lutcamera_in_demosaic: endpoint {
 						remote-endpoint = <&demo_outcamera_in_demosaic>;
+					};
+				};
+				gamma_port1camera_in_gamma_lut: port@1 {
+					reg = <1>;
+					xlnx,video-width = <10>;
+					gamma_outcamera_in_gamma_lut: endpoint {
+						remote-endpoint = <&camera_in_vpsscamera_in_gamma_lut>;
 					};
 				};
 			};
@@ -238,22 +238,22 @@
 			csc_portscamera_in_vpss: ports {
 				#address-cells = <1>;
 				#size-cells = <0>;
-				csc_port1camera_in_vpss: port@1 {
-					/* For xlnx,video-format user needs to fill as per their requirement */
-					reg = <1>;
-					xlnx,video-format = <XVIP_VF_XRGB>;
-					xlnx,video-width = <10>;
-					csc_outcamera_in_vpss: endpoint {
-						remote-endpoint = <&camera_in_frmbuf_wrcamera_in_vpss>;
-					};
-				};
 				csc_port0camera_in_vpss: port@0 {
 					/* For xlnx,video-format user needs to fill as per their requirement */
 					reg = <0>;
-					xlnx,video-format = <XVIP_VF_XRGB>;
+					xlnx,video-format = <XVIP_VF_XBGR>;
 					xlnx,video-width = <10>;
 					camera_in_vpsscamera_in_gamma_lut: endpoint {
 						remote-endpoint = <&gamma_outcamera_in_gamma_lut>;
+					};
+				};
+				csc_port1camera_in_vpss: port@1 {
+					/* For xlnx,video-format user needs to fill as per their requirement */
+					reg = <1>;
+					xlnx,video-format = <XVIP_VF_XBGR>;
+					xlnx,video-width = <10>;
+					csc_outcamera_in_vpss: endpoint {
+						remote-endpoint = <&camera_in_frmbuf_wrcamera_in_vpss>;
 					};
 				};
 			};
@@ -291,6 +291,11 @@
 		misc_clk_1: misc_clk_1 {
 			#clock-cells = <0>;
 			clock-frequency = <148500000>;
+			compatible = "fixed-clock";
+		};
+		misc_clk_2: misc_clk_2 {
+			#clock-cells = <0>;
+			clock-frequency = <742500000>;
 			compatible = "fixed-clock";
 		};
 		hdmi_out_v_frmbuf_rd_0: v_frmbuf_rd@43ca0000 {
