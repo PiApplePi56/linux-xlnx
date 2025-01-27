@@ -18,7 +18,7 @@
  */
 #define XVIP_VF_YUV_422			0
 #define XVIP_VF_YUV_444			1
-#define XVIP_VF_RBG			2
+#define XVIP_VF_RBG			    2
 #define XVIP_VF_YUV_420			3
 #define XVIP_VF_YUVA_422		4
 #define XVIP_VF_YUVA_444		5

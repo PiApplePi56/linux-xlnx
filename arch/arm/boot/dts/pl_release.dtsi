@@ -101,8 +101,7 @@
 			xlnx,axis-tdata-width = <32>;
 			xlnx,csi-pxl-format = <0x2b>;
 			xlnx,dphy-present ;
-			xlnx,en-active-lanes ;
-			xlnx,max-lanes = <4>;
+			xlnx,max-lanes = <2>;
 			xlnx,ppc = <1>;
 			xlnx,vfb ;
 			mipi_csi_portscamera_in_csi2_rx: ports {
@@ -116,7 +115,7 @@
 					xlnx,video-format = <XVIP_VF_MONO_SENSOR>;
 					xlnx,video-width = <10>;
 					mipi_csi_incamera_in_csi2_rx: endpoint {
-						data-lanes = <1 2 3 4>;
+						data-lanes = <1 2>;
 						remote-endpoint=<&ov5647_ep>;
 					};
 				};
@@ -298,6 +297,11 @@
 			clock-frequency = <742500000>;
 			compatible = "fixed-clock";
 		};
+		misc_clk_3: misc_clk_3 {
+			#clock-cells = <0>;
+			clock-frequency = <25000000>;
+			compatible = "fixed-clock";
+		};
 		hdmi_out_v_frmbuf_rd_0: v_frmbuf_rd@43ca0000 {
 			#dma-cells = <1>;
 			clock-names = "ap_clk";
@@ -315,8 +319,8 @@
 			xlnx,pixels-per-clock = <1>;
 			xlnx,s-axi-ctrl-addr-width = <0x7>;
 			xlnx,s-axi-ctrl-data-width = <0x20>;
-			xlnx,vid-formats = "rgb888", "bgr888";
-			xlnx,video-width = <8>;
+			xlnx,vid-formats = "rgb888", "bgr888", "xbgr2101010";
+			xlnx,video-width = <10>;
 		};
 		i2c_camera: i2c@41600000 {
 			#address-cells = <1>;

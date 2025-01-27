@@ -193,7 +193,10 @@
 	ov5647@36 {
 		compatible = "ovti,ov5647";
 		reg = <0x36>;
-		pwdn-gpios = <&gpio0 56 GPIO_ACTIVE_HIGH>;
+		pwdn-gpios = <&gpio0 57 GPIO_ACTIVE_LOW>;
+		lvsft-gpios = <&gpio0 59 GPIO_ACTIVE_HIGH>;
+		led-gpios = <&gpio0 60 GPIO_ACTIVE_HIGH>;
+		clocks = <&misc_clk_3>;
 		status = "okay";
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -237,7 +240,7 @@
 		compatible = "xlnx,pl-disp";
 		dmas = <&hdmi_out_v_frmbuf_rd_0 0>;
 		dma-names = "dma0";
-		xlnx,vformat = "BG24";
+		xlnx,vformat = "RG24";
 		xlnx,bridge = <&hdmi_out_hdmi_vtc>;
 
 		ports {

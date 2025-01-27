@@ -28,6 +28,7 @@
 #include <media/v4l2-fwnode.h>
 #include <media/v4l2-image-sizes.h>
 #include <media/v4l2-mediabus.h>
+#include <linux/timer.h>
 
 /*
  * From the datasheet, "20ms after PWDN goes low or 20ms after RESETB goes
@@ -99,15 +100,20 @@ struct ov5647 {
 	struct v4l2_subdev		sd;
 	struct media_pad		pad;
 	struct mutex			lock;
+	struct clk				*xclk;
 	struct gpio_desc		*pwdn;
-	bool				clock_ncont;
+	struct gpio_desc		*levelshifter_en;
+	struct gpio_desc		*led;
+	bool					clock_ncont;
 	struct v4l2_ctrl_handler	ctrls;
 	const struct ov5647_mode	*mode;
 	struct v4l2_ctrl		*pixel_rate;
 	struct v4l2_ctrl		*hblank;
 	struct v4l2_ctrl		*vblank;
 	struct v4l2_ctrl		*exposure;
-	bool				streaming;
+	bool					streaming;
+	struct timer_list		blink_timer;
+	bool					led_state;
 };
 
 static inline struct ov5647 *to_sensor(struct v4l2_subdev *sd)
@@ -729,13 +735,15 @@ static int ov5647_stream_on(struct v4l2_subdev *sd)
 	if (ret < 0)
 		return ret;
 
+	mod_timer(&sensor->blink_timer, jiffies + msecs_to_jiffies(50));
+
 	return ov5647_write(sd, OV5640_REG_PAD_OUT, 0x00);
 }
 
 static int ov5647_stream_off(struct v4l2_subdev *sd)
 {
 	int ret;
-
+	struct ov5647 *sensor = to_sensor(sd);
 	ret = ov5647_write(sd, OV5647_REG_MIPI_CTRL00,
 			   MIPI_CTRL00_CLOCK_LANE_GATE | MIPI_CTRL00_BUS_IDLE |
 			   MIPI_CTRL00_CLOCK_LANE_DISABLE);
@@ -745,6 +753,9 @@ static int ov5647_stream_off(struct v4l2_subdev *sd)
 	ret = ov5647_write(sd, OV5647_REG_FRAME_OFF_NUMBER, 0x0f);
 	if (ret < 0)
 		return ret;
+
+	del_timer_sync(&sensor->blink_timer);
+	gpiod_set_value_cansleep(sensor->led, 0);
 
 	return ov5647_write(sd, OV5640_REG_PAD_OUT, 0x01);
 }
@@ -759,6 +770,12 @@ static int ov5647_power_on(struct device *dev)
 	if (sensor->pwdn) {
 		gpiod_set_value_cansleep(sensor->pwdn, 0);
 		msleep(PWDN_ACTIVE_DELAY_MS);
+	}
+
+	ret = clk_prepare_enable(sensor->xclk);
+	if (ret < 0) {
+		dev_err(dev, "clk prepare enable failed\n");
+		goto error_pwdn;
 	}
 
 	ret = ov5647_write_array(&sensor->sd, sensor_oe_enable_regs,
@@ -778,6 +795,7 @@ static int ov5647_power_on(struct device *dev)
 	return 0;
 
 error_clk_disable:
+	clk_disable_unprepare(sensor->xclk);
 error_pwdn:
 	gpiod_set_value_cansleep(sensor->pwdn, 1);
 
@@ -807,6 +825,7 @@ static int ov5647_power_off(struct device *dev)
 	if (ret < 0)
 		dev_dbg(dev, "software standby failed\n");
 
+	clk_disable_unprepare(sensor->xclk);
 	gpiod_set_value_cansleep(sensor->pwdn, 1);
 
 	return 0;
@@ -1347,12 +1366,23 @@ out:
 	return ret;
 }
 
+static void ov5647_blink_timer_fn(struct timer_list *t)
+{
+	struct ov5647 *sensor = from_timer(sensor, t, blink_timer);
+	sensor->led_state = !sensor->led_state;
+	if (sensor->led)
+		gpiod_set_value_cansleep(sensor->led, sensor->led_state);
+
+	mod_timer(&sensor->blink_timer, jiffies + msecs_to_jiffies(1000));
+}
+
 static int ov5647_probe(struct i2c_client *client)
 {
 	struct device_node *np = client->dev.of_node;
 	struct device *dev = &client->dev;
 	struct ov5647 *sensor;
 	struct v4l2_subdev *sd;
+	u32 xclk_freq;
 	int ret;
 
 	sensor = devm_kzalloc(dev, sizeof(*sensor), GFP_KERNEL);
@@ -1367,12 +1397,40 @@ static int ov5647_probe(struct i2c_client *client)
 		}
 	}
 
+	sensor->xclk = devm_clk_get(dev, NULL);
+	if (IS_ERR(sensor->xclk)) {
+		dev_err(dev, "could not get xclk");
+		return PTR_ERR(sensor->xclk);
+	}
+
+	xclk_freq = clk_get_rate(sensor->xclk);
+	if (xclk_freq != 25000000) {
+		dev_err(dev, "Unsupported clock frequency: %u\n", xclk_freq);
+		return -EINVAL;
+	}
+
 	/* Request the power down GPIO asserted. */
 	sensor->pwdn = devm_gpiod_get_optional(dev, "pwdn", GPIOD_OUT_HIGH);
 	if (IS_ERR(sensor->pwdn)) {
 		dev_err(dev, "Failed to get 'pwdn' gpio\n");
 		return -EINVAL;
 	}
+
+	sensor->levelshifter_en = devm_gpiod_get(dev, "lvsft", GPIOD_OUT_HIGH);
+	if (IS_ERR(sensor->levelshifter_en)) {
+		dev_err(dev, "Failed to get 'levelshifter_en' gpio\n");
+		return -EINVAL;
+	}
+	gpiod_set_value_cansleep(sensor->levelshifter_en, 1);//pull mode selection pin to high
+
+	sensor->led = devm_gpiod_get_optional(dev, "led", GPIOD_OUT_LOW);
+	if (IS_ERR(sensor->led)) {
+		dev_err(dev, "Failed to get 'pwdn' gpio\n");
+		return -EINVAL;
+	}
+	sensor->led_state = false;
+	gpiod_set_value_cansleep(sensor->led, 0);
+	timer_setup(&sensor->blink_timer, ov5647_blink_timer_fn, 0);
 
 	mutex_init(&sensor->lock);
 
