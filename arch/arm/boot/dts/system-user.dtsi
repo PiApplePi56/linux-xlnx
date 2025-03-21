@@ -86,6 +86,31 @@
 		view-port = <0x0170>;
 		drv-vbus;
 	};
+
+	vcc_3v3: vcc-3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc-3v3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+	};
+
+};
+
+&spi0 {
+	status = "okay";
+	display@1{
+    	compatible = "adafruit,yx240qv29", "ilitek,ili9341";
+    	reg = <1>;
+    	spi-max-frequency = <166666666>;
+    	reset-gpios = <&gpio0 61 GPIO_ACTIVE_HIGH>;
+    	dc-gpios = <&gpio0 62 GPIO_ACTIVE_HIGH>;
+    	rotation = <90>;
+    	led-gpios = <&gpio0 63 GPIO_ACTIVE_HIGH>;
+		bgr;
+		buswidth = <8>;
+		vcc = <&vcc_3v3>;
+    };
 };
 
 &uart1{
