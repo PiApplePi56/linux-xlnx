@@ -196,7 +196,7 @@
 		pwdn-gpios = <&gpio0 57 GPIO_ACTIVE_LOW>;
 		lvsft-gpios = <&gpio0 59 GPIO_ACTIVE_HIGH>;
 		led-gpios = <&gpio0 60 GPIO_ACTIVE_HIGH>;
-		clocks = <&misc_clk_3>;
+		clocks = <&sensor_clk>;
 		status = "okay";
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -240,7 +240,7 @@
 		compatible = "xlnx,pl-disp";
 		dmas = <&hdmi_out_v_frmbuf_rd_0 0>;
 		dma-names = "dma0";
-		xlnx,vformat = "RG24";
+		xlnx,vformat = "BG24";
 		xlnx,bridge = <&hdmi_out_hdmi_vtc>;
 
 		ports {
@@ -260,7 +260,7 @@
 		compatible = "dglnt,dglnt-hdmi";
 		status = "okay";
 
-		clocks = <&misc_clk_1>, <&misc_clk_2>;
+		clocks = <&hdmi_pclk>, <&hdmi_pclk_5x>;
 		clock-names = "hdmi_pclk", "hdmi_pclk_5x";
     	clk-num = <2>;															
 		ddc-i2c-bus = <&i2c0>;

@@ -20,7 +20,6 @@
 		i2c1 = &i2c1;
 		i2c2 = &i2c_camera;
 		serial0 = &uart1;
-		spi0 = &qspi;
 	};
 	memory@0 {
 		device_type = "memory";

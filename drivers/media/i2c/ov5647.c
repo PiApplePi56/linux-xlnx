@@ -60,6 +60,20 @@
 #define OV5647_REG_MIPI_CTRL14		0x4814
 #define OV5647_REG_AWB			0x5001
 
+/* Add test pattern registers */
+#define OV5647_REG_ISP_CTRL00         0x5000
+#define OV5647_REG_ISP_CTRL01         0x5001
+#define OV5647_REG_ISP_CTRL03         0x5003
+#define OV5647_REG_TEST_PATTERN       0x503d
+
+/* Test pattern values */
+enum {
+    OV5647_TEST_PATTERN_DISABLED,
+    OV5647_TEST_PATTERN_COLOR_BAR,
+    OV5647_TEST_PATTERN_COLOR_SQUARE,
+	OV5647_TEST_PATTERN_MONO_SQUARE,
+};
+
 #define REG_TERM 0xfffe
 #define VAL_TERM 0xfe
 #define REG_DLY  0xffff
@@ -114,6 +128,13 @@ struct ov5647 {
 	bool					streaming;
 	struct timer_list		blink_timer;
 	bool					led_state;
+};
+
+static const char *const pattern_string[] = {
+	"Disabled",
+	"Color Bar",
+	"Color Square",
+	"Mono Square",
 };
 
 static inline struct ov5647 *to_sensor(struct v4l2_subdev *sd)
@@ -582,8 +603,8 @@ static const struct ov5647_mode ov5647_modes[] = {
 };
 
 /* Default sensor mode is 2x2 binned 640x480 SBGGR10_1X10. */
-#define OV5647_DEFAULT_MODE	(&ov5647_modes[3])
-#define OV5647_DEFAULT_FORMAT	(ov5647_modes[3].format)
+#define OV5647_DEFAULT_MODE	(&ov5647_modes[2])
+#define OV5647_DEFAULT_FORMAT	(ov5647_modes[2].format)
 
 static int ov5647_write16(struct v4l2_subdev *sd, u16 reg, u16 val)
 {
@@ -1201,6 +1222,73 @@ static int ov5647_s_exposure(struct v4l2_subdev *sd, u32 val)
 	return ov5647_write(sd, OV5647_REG_EXP_LO, (val & 0xf) << 4);
 }
 
+static int ov5647_set_test_pattern(struct v4l2_subdev *sd, int value)
+{
+    int ret = 0;
+    u8 ctrl00, ctrl01, ctrl03;
+    
+    /* Read current ISP control registers */
+    ret = ov5647_read(sd, OV5647_REG_ISP_CTRL00, &ctrl00);
+    if (ret)
+        return ret;
+        
+    ret = ov5647_read(sd, OV5647_REG_ISP_CTRL01, &ctrl01);
+    if (ret)
+        return ret;
+        
+    ret = ov5647_read(sd, OV5647_REG_ISP_CTRL03, &ctrl03);
+    if (ret)
+        return ret;
+        
+    switch (value) {
+    case OV5647_TEST_PATTERN_DISABLED:
+        /* Enable digital gain, AWB, etc */
+        ctrl00 |= BIT(2) | BIT(1);
+        ctrl01 |= BIT(0);  /* Enable AWB */
+        ctrl03 &= ~BIT(3); /* Disable test pattern */
+        ret = ov5647_write(sd, OV5647_REG_TEST_PATTERN, 0x00);
+        break;
+        
+    case OV5647_TEST_PATTERN_COLOR_BAR:
+        /* Disable digital gain, AWB for test patterns */
+        ctrl00 &= ~(BIT(2) | BIT(1));
+        ctrl01 &= ~BIT(0);  /* Disable AWB */
+        ctrl03 |= BIT(3);   /* Enable test pattern */
+        ret = ov5647_write(sd, OV5647_REG_TEST_PATTERN, 0x80);
+        break;
+        
+    case OV5647_TEST_PATTERN_COLOR_SQUARE:
+        ctrl00 &= ~(BIT(2) | BIT(1));
+        ctrl01 &= ~BIT(0);
+        ctrl03 |= BIT(3);
+        ret = ov5647_write(sd, OV5647_REG_TEST_PATTERN, 0x81);
+        break;
+    case OV5647_TEST_PATTERN_MONO_SQUARE:
+        ctrl00 &= ~(BIT(2) | BIT(1));
+        ctrl01 &= ~BIT(0);
+        ctrl03 |= BIT(3);
+        ret = ov5647_write(sd, OV5647_REG_TEST_PATTERN, 0x91);
+        break;
+    default:
+        return -EINVAL;
+    }
+    
+    if (ret)
+        return ret;
+    
+    ret = ov5647_write(sd, OV5647_REG_ISP_CTRL00, ctrl00);
+    if (ret)
+        return ret;
+        
+    ret = ov5647_write(sd, OV5647_REG_ISP_CTRL01, ctrl01);
+    if (ret)
+        return ret;
+        
+    ret = ov5647_write(sd, OV5647_REG_ISP_CTRL03, ctrl03);
+    
+    return ret;
+}
+
 static int ov5647_s_ctrl(struct v4l2_ctrl *ctrl)
 {
 	struct ov5647 *sensor = container_of(ctrl->handler,
@@ -1252,6 +1340,9 @@ static int ov5647_s_ctrl(struct v4l2_ctrl *ctrl)
 		ret = ov5647_write16(sd, OV5647_REG_VTS_HI,
 				     sensor->mode->format.height + ctrl->val);
 		break;
+	case V4L2_CID_TEST_PATTERN:
+        ret = ov5647_set_test_pattern(sd, ctrl->val);
+        break;
 
 	/* Read-only, but we adjust it based on mode. */
 	case V4L2_CID_PIXEL_RATE:
@@ -1280,7 +1371,7 @@ static int ov5647_init_controls(struct ov5647 *sensor)
 	struct i2c_client *client = v4l2_get_subdevdata(&sensor->sd);
 	int hblank, exposure_max, exposure_def;
 
-	v4l2_ctrl_handler_init(&sensor->ctrls, 8);
+	v4l2_ctrl_handler_init(&sensor->ctrls, 9); /* Increase control count */
 
 	v4l2_ctrl_new_std(&sensor->ctrls, &ov5647_ctrl_ops,
 			  V4L2_CID_AUTOGAIN, 0, 1, 1, 0);
@@ -1323,6 +1414,13 @@ static int ov5647_init_controls(struct ov5647 *sensor)
 					   sensor->mode->format.height, 1,
 					   sensor->mode->vts -
 					   sensor->mode->format.height);
+
+	/* Add test pattern control */
+    v4l2_ctrl_new_std_menu_items(&sensor->ctrls, &ov5647_ctrl_ops,
+                V4L2_CID_TEST_PATTERN,
+                OV5647_TEST_PATTERN_MONO_SQUARE, 0,
+                OV5647_TEST_PATTERN_DISABLED,
+				pattern_string);
 
 	if (sensor->ctrls.error)
 		goto handler_free;

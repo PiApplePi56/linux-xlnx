@@ -15,7 +15,7 @@
 		ranges ;
 		audio_audio_formatter: audio_formatter@43c50000 {
 			clock-names = "s_axi_lite_aclk", "m_axis_mm2s_aclk", "aud_mclk", "s_axis_s2mm_aclk";
-			clocks = <&clkc 15>, <&clkc 15>, <&misc_clk_0>, <&clkc 15>;
+			clocks = <&clkc 15>, <&clkc 15>, <&audio_mclk>, <&clkc 15>;
 			compatible = "xlnx,audio-formatter-1.0", "xlnx,audio-formatter-1.0";
 			interrupt-names = "irq_mm2s", "irq_s2mm";
 			interrupt-parent = <&intc>;
@@ -36,7 +36,7 @@
 			xlnx,s2mm-dataformat = <0x1>;
 			xlnx,tx = <&audio_i2s_transmitter>;
 		};
-		misc_clk_0: misc_clk_0 {
+		audio_mclk: audio_mclk {
 			#clock-cells = <0>;
 			clock-frequency = <16934404>;
 			compatible = "fixed-clock";
@@ -44,7 +44,7 @@
 		audio_i2s_receiver: i2s_receiver@43c60000 {
 			aud_mclk = <16934404>;
 			clock-names = "s_axi_ctrl_aclk", "aud_mclk", "m_axis_aud_aclk";
-			clocks = <&clkc 15>, <&misc_clk_0>, <&clkc 15>;
+			clocks = <&clkc 15>, <&audio_mclk>, <&clkc 15>;
 			compatible = "xlnx,i2s-receiver-1.0", "xlnx,i2s-receiver-1.0";
 			interrupt-names = "irq";
 			interrupt-parent = <&intc>;
@@ -58,7 +58,7 @@
 		audio_i2s_transmitter: i2s_transmitter@43c70000 {
 			aud_mclk = <16934404>;
 			clock-names = "s_axi_ctrl_aclk", "aud_mclk", "s_axis_aud_aclk";
-			clocks = <&clkc 15>, <&misc_clk_0>, <&clkc 15>;
+			clocks = <&clkc 15>, <&audio_mclk>, <&clkc 15>;
 			compatible = "xlnx,i2s-transmitter-1.0", "xlnx,i2s-transmitter-1.0";
 			interrupt-names = "irq";
 			interrupt-parent = <&intc>;
@@ -89,9 +89,14 @@
 			xlnx,tri-default = <0xFFFFFFFF>;
 			xlnx,tri-default-2 = <0xFFFFFFFF>;
 		};
+		vid_apclk: vid_apclk {
+			#clock-cells = <0>;
+			clock-frequency = <200000000>;
+			compatible = "fixed-clock";
+		};		
 		camera_in_csi2_rx: mipi_csi2_rx_subsystem@43c00000 {
 			clock-names = "lite_aclk", "dphy_clk_200M", "video_aclk";
-			clocks = <&clkc 15>, <&clkc 17>, <&clkc 16>;
+			clocks = <&clkc 15>, <&vid_apclk>, <&vid_apclk>;
 			compatible = "xlnx,mipi-csi2-rx-subsystem-5.0";
 			interrupt-names = "csirxss_csi_irq";
 			interrupt-parent = <&intc>;
@@ -100,9 +105,8 @@
 			video-reset-gpios = <&rst_gpio 4 1>;
 			xlnx,axis-tdata-width = <32>;
 			xlnx,csi-pxl-format = <0x2b>;
-			xlnx,dphy-present ;
 			xlnx,max-lanes = <2>;
-			xlnx,ppc = <1>;
+			xlnx,ppc = <2>;
 			xlnx,vfb ;
 			mipi_csi_portscamera_in_csi2_rx: ports {
 				#address-cells = <1>;
@@ -133,7 +137,7 @@
 		};
 		camera_in_demosaic: v_demosaic@43c10000 {
 			clock-names = "ap_clk";
-			clocks = <&clkc 16>;
+			clocks = <&vid_apclk>;
 			compatible = "xlnx,v-demosaic-1.1", "xlnx,v-demosaic";
 			interrupt-names = "interrupt";
 			interrupt-parent = <&intc>;
@@ -151,7 +155,7 @@
 					/* For cfa-pattern=rggb user needs to fill as per BAYER format */
 					reg = <0>;
 					xlnx,cfa-pattern = "rggb";
-					xlnx,video-width = <10>;
+					xlnx,video-width = <8>;
 					camera_in_demosaiccamera_in_csi2_rx: endpoint {
 						remote-endpoint = <&mipi_csirx_outcamera_in_csi2_rx>;
 					};
@@ -160,7 +164,7 @@
 					/* For cfa-pattern=rggb user needs to fill as per BAYER format */
 					reg = <1>;
 					xlnx,cfa-pattern = "rggb";
-					xlnx,video-width = <10>;
+					xlnx,video-width = <8>;
 					demo_outcamera_in_demosaic: endpoint {
 						remote-endpoint = <&camera_in_gamma_lutcamera_in_demosaic>;
 					};
@@ -170,7 +174,7 @@
 		camera_in_frmbuf_wr: v_frmbuf_wr@43c40000 {
 			#dma-cells = <1>;
 			clock-names = "ap_clk";
-			clocks = <&clkc 16>;
+			clocks = <&vid_apclk>;
 			compatible = "xlnx,v-frmbuf-wr-2.4", "xlnx,axi-frmbuf-wr-v2.2";
 			interrupt-names = "interrupt";
 			interrupt-parent = <&intc>;
@@ -178,18 +182,18 @@
 			reg = <0x43c40000 0x10000>;
 			reset-gpios = <&rst_gpio 0 1>;
 			xlnx,dma-addr-width = <32>;
-			xlnx,dma-align = <8>;
+			xlnx,dma-align = <16>;
 			xlnx,max-height = <3072>;
 			xlnx,max-width = <4096>;
-			xlnx,pixels-per-clock = <1>;
+			xlnx,pixels-per-clock = <2>;
 			xlnx,s-axi-ctrl-addr-width = <0x7>;
 			xlnx,s-axi-ctrl-data-width = <0x20>;
-			xlnx,vid-formats = "rgb888", "bgr888", "xbgr2101010", "y8", "vuy888", "xvuy8888", "yuvx2101010", "yuyv";
-			xlnx,video-width = <10>;
+			xlnx,vid-formats = "rgb888", "bgr888", "y8", "vuy888", "xvuy8888", "yuyv";
+			xlnx,video-width = <8>;
 		};
 		camera_in_gamma_lut: v_gamma_lut@43cb0000 {
 			clock-names = "ap_clk";
-			clocks = <&clkc 16>;
+			clocks = <&vid_apclk>;
 			compatible = "xlnx,v-gamma-lut-1.1", "xlnx,v-gamma-lut";
 			interrupt-names = "interrupt";
 			interrupt-parent = <&intc>;
@@ -205,14 +209,14 @@
 				#size-cells = <0>;
 				gamma_port0camera_in_gamma_lut: port@0 {
 					reg = <0>;
-					xlnx,video-width = <10>;
+					xlnx,video-width = <8>;
 					camera_in_gamma_lutcamera_in_demosaic: endpoint {
 						remote-endpoint = <&demo_outcamera_in_demosaic>;
 					};
 				};
 				gamma_port1camera_in_gamma_lut: port@1 {
 					reg = <1>;
-					xlnx,video-width = <10>;
+					xlnx,video-width = <8>;
 					gamma_outcamera_in_gamma_lut: endpoint {
 						remote-endpoint = <&camera_in_vpsscamera_in_gamma_lut>;
 					};
@@ -221,7 +225,7 @@
 		};
 		camera_in_vpss: v_proc_ss@43cc0000 {
 			clock-names = "aclk";
-			clocks = <&clkc 16>;
+			clocks = <&vid_apclk>;
 			compatible = "xlnx,v-vpss-csc";
 			reg = <0x43cc0000 0x10000>;
 			reset-gpios = <&rst_gpio 6 1>;
@@ -230,18 +234,18 @@
 			xlnx,max-height = <3072>;
 			xlnx,max-width = <4096>;
 			xlnx,num-video-components = <3>;
-			xlnx,samples-per-clk = <1>;
+			xlnx,samples-per-clk = <2>;
 			xlnx,topology = <3>;
 			xlnx,use-uram = <0>;
-			xlnx,video-width = <10>;
+			xlnx,video-width = <8>;
 			csc_portscamera_in_vpss: ports {
 				#address-cells = <1>;
 				#size-cells = <0>;
 				csc_port0camera_in_vpss: port@0 {
 					/* For xlnx,video-format user needs to fill as per their requirement */
 					reg = <0>;
-					xlnx,video-format = <XVIP_VF_XBGR>;
-					xlnx,video-width = <10>;
+					xlnx,video-format = <XVIP_VF_RBG>;
+					xlnx,video-width = <8>;
 					camera_in_vpsscamera_in_gamma_lut: endpoint {
 						remote-endpoint = <&gamma_outcamera_in_gamma_lut>;
 					};
@@ -249,8 +253,8 @@
 				csc_port1camera_in_vpss: port@1 {
 					/* For xlnx,video-format user needs to fill as per their requirement */
 					reg = <1>;
-					xlnx,video-format = <XVIP_VF_XBGR>;
-					xlnx,video-width = <10>;
+					xlnx,video-format = <XVIP_VF_RBG>;
+					xlnx,video-width = <8>;
 					csc_outcamera_in_vpss: endpoint {
 						remote-endpoint = <&camera_in_frmbuf_wrcamera_in_vpss>;
 					};
@@ -279,7 +283,7 @@
 		};
 		hdmi_out_hdmi_vtc: v_tc@43c90000 {
 			clock-names = "clk", "s_axi_aclk";
-			clocks = <&misc_clk_1>, <&clkc 15>;
+			clocks = <&hdmi_pclk>, <&clkc 15>;
 			compatible = "xlnx,v-tc-6.2", "xlnx,v-tc-6.1";
 			interrupt-names = "irq";
 			interrupt-parent = <&intc>;
@@ -287,17 +291,17 @@
 			reg = <0x43c90000 0x10000>;
 			xlnx,generator ;
 		};
-		misc_clk_1: misc_clk_1 {
+		hdmi_pclk: hdmi_pclk {
 			#clock-cells = <0>;
 			clock-frequency = <148500000>;
 			compatible = "fixed-clock";
 		};
-		misc_clk_2: misc_clk_2 {
+		hdmi_pclk_5x: hdmi_pclk_5x {
 			#clock-cells = <0>;
 			clock-frequency = <742500000>;
 			compatible = "fixed-clock";
 		};
-		misc_clk_3: misc_clk_3 {
+		sensor_clk: sensor_clk {
 			#clock-cells = <0>;
 			clock-frequency = <25000000>;
 			compatible = "fixed-clock";
@@ -305,8 +309,8 @@
 		hdmi_out_v_frmbuf_rd_0: v_frmbuf_rd@43ca0000 {
 			#dma-cells = <1>;
 			clock-names = "ap_clk";
-			clocks = <&misc_clk_1>;
-			compatible = "xlnx,v-frmbuf-rd-2.4", "xlnx,axi-frmbuf-rd-v2.2";
+			clocks = <&hdmi_pclk>;
+			compatible = "xlnx,axi-frmbuf-rd-v2.2";
 			interrupt-names = "interrupt";
 			interrupt-parent = <&intc>;
 			interrupts = <0 52 4>;
@@ -319,8 +323,8 @@
 			xlnx,pixels-per-clock = <1>;
 			xlnx,s-axi-ctrl-addr-width = <0x7>;
 			xlnx,s-axi-ctrl-data-width = <0x20>;
-			xlnx,vid-formats = "rgb888", "bgr888", "xbgr2101010";
-			xlnx,video-width = <10>;
+			xlnx,vid-formats = "rgb888", "bgr888";
+			xlnx,video-width = <8>;
 		};
 		i2c_camera: i2c@41600000 {
 			#address-cells = <1>;
