@@ -99,17 +99,17 @@
 
 &spi0 {
 	status = "okay";
-	display@1{
-    	compatible = "adafruit,yx240qv29", "ilitek,ili9341";
-    	reg = <1>;
+	display@0{
+    	compatible = "ilitek,ili9341";
+    	reg = <0>;
     	spi-max-frequency = <166666666>;
-    	reset-gpios = <&gpio0 61 GPIO_ACTIVE_HIGH>;
+    	reset-gpios = <&gpio0 61 GPIO_ACTIVE_LOW>;
     	dc-gpios = <&gpio0 62 GPIO_ACTIVE_HIGH>;
-    	rotation = <90>;
+    	rotate = <0>;
     	led-gpios = <&gpio0 63 GPIO_ACTIVE_HIGH>;
-		bgr;
 		buswidth = <8>;
 		vcc = <&vcc_3v3>;
+		debug = <0>;
     };
 };
 
@@ -211,6 +211,10 @@
 		clock-names = "mclk";
 		clocks = <&clk_wiz_0 0>;
 	};
+};
+
+&i2c0 {
+	status = "okay";
 };
 
 &i2c_camera {
