@@ -154,10 +154,10 @@ static const struct regval_list sensor_oe_enable_regs[] = {
 	{0x3002, 0xe4},
 };
 
-static struct regval_list ov5647_2592x1944_10bpp[] = {
+static struct regval_list ov5647_2592x1944_8bpp[] = {
 	{0x0100, 0x00},
 	{0x0103, 0x01},
-	{0x3034, 0x1a},
+	{0x3034, 0x18},
 	{0x3035, 0x21},
 	{0x3036, 0x69},
 	{0x303c, 0x11},
@@ -243,10 +243,10 @@ static struct regval_list ov5647_2592x1944_10bpp[] = {
 	{0x0100, 0x01},
 };
 
-static struct regval_list ov5647_1080p30_10bpp[] = {
+static struct regval_list ov5647_1080p30_8bpp[] = {
 	{0x0100, 0x00},
 	{0x0103, 0x01},
-	{0x3034, 0x1a},
+	{0x3034, 0x18},
 	{0x3035, 0x21},
 	{0x3036, 0x62},
 	{0x303c, 0x11},
@@ -332,10 +332,10 @@ static struct regval_list ov5647_1080p30_10bpp[] = {
 	{0x0100, 0x01},
 };
 
-static struct regval_list ov5647_2x2binned_10bpp[] = {
+static struct regval_list ov5647_2x2binned_8bpp[] = {
 	{0x0100, 0x00},
 	{0x0103, 0x01},
-	{0x3034, 0x1a},
+	{0x3034, 0x18},
 	{0x3035, 0x21},
 	{0x3036, 0x62},
 	{0x303c, 0x11},
@@ -425,7 +425,7 @@ static struct regval_list ov5647_2x2binned_10bpp[] = {
 	{0x0100, 0x01},
 };
 
-static struct regval_list ov5647_640x480_10bpp[] = {
+static struct regval_list ov5647_640x480_8bpp[] = {
 	{0x0100, 0x00},
 	{0x0103, 0x01},
 	{0x3035, 0x11},
@@ -508,7 +508,7 @@ static struct regval_list ov5647_640x480_10bpp[] = {
 	{0x3018, 0x44},
 	{0x3035, 0x21},
 	{0x3106, 0xf5},
-	{0x3034, 0x1a},
+	{0x3034, 0x18},
 	{0x301c, 0xf8},
 	{0x4800, 0x34},
 	{0x3503, 0x03},
@@ -516,10 +516,10 @@ static struct regval_list ov5647_640x480_10bpp[] = {
 };
 
 static const struct ov5647_mode ov5647_modes[] = {
-	/* 2592x1944 full resolution full FOV 10-bit mode. */
+	/* 2592x1944 full resolution full FOV 8-bit mode. */
 	{
 		.format = {
-			.code		= MEDIA_BUS_FMT_SBGGR10_1X10,
+			.code		= MEDIA_BUS_FMT_SBGGR8_1X8,
 			.colorspace	= V4L2_COLORSPACE_SRGB,
 			.field		= V4L2_FIELD_NONE,
 			.width		= 2592,
@@ -534,13 +534,13 @@ static const struct ov5647_mode ov5647_modes[] = {
 		.pixel_rate	= 87500000,
 		.hts		= 2844,
 		.vts		= 0x7b0,
-		.reg_list	= ov5647_2592x1944_10bpp,
-		.num_regs	= ARRAY_SIZE(ov5647_2592x1944_10bpp)
+		.reg_list	= ov5647_2592x1944_8bpp,
+		.num_regs	= ARRAY_SIZE(ov5647_2592x1944_8bpp)
 	},
-	/* 1080p30 10-bit mode. Full resolution centre-cropped down to 1080p. */
+	/* 1080p30 8-bit mode. Full resolution centre-cropped down to 1080p. */
 	{
 		.format = {
-			.code		= MEDIA_BUS_FMT_SBGGR10_1X10,
+			.code		= MEDIA_BUS_FMT_SBGGR8_1X8,
 			.colorspace	= V4L2_COLORSPACE_SRGB,
 			.field		= V4L2_FIELD_NONE,
 			.width		= 1920,
@@ -555,13 +555,13 @@ static const struct ov5647_mode ov5647_modes[] = {
 		.pixel_rate	= 81666700,
 		.hts		= 2416,
 		.vts		= 0x450,
-		.reg_list	= ov5647_1080p30_10bpp,
-		.num_regs	= ARRAY_SIZE(ov5647_1080p30_10bpp)
+		.reg_list	= ov5647_1080p30_8bpp,
+		.num_regs	= ARRAY_SIZE(ov5647_1080p30_8bpp)
 	},
-	/* 2x2 binned full FOV 10-bit mode. */
+	/* 2x2 binned full FOV 8-bit mode. */
 	{
 		.format = {
-			.code		= MEDIA_BUS_FMT_SBGGR10_1X10,
+			.code		= MEDIA_BUS_FMT_SBGGR8_1X8,
 			.colorspace	= V4L2_COLORSPACE_SRGB,
 			.field		= V4L2_FIELD_NONE,
 			.width		= 1296,
@@ -576,13 +576,13 @@ static const struct ov5647_mode ov5647_modes[] = {
 		.pixel_rate	= 81666700,
 		.hts		= 1896,
 		.vts		= 0x59b,
-		.reg_list	= ov5647_2x2binned_10bpp,
-		.num_regs	= ARRAY_SIZE(ov5647_2x2binned_10bpp)
+		.reg_list	= ov5647_2x2binned_8bpp,
+		.num_regs	= ARRAY_SIZE(ov5647_2x2binned_8bpp)
 	},
-	/* 10-bit VGA full FOV 60fps. 2x2 binned and subsampled down to VGA. */
+	/* 8-bit VGA full FOV 60fps. 2x2 binned and subsampled down to VGA. */
 	{
 		.format = {
-			.code		= MEDIA_BUS_FMT_SBGGR10_1X10,
+			.code		= MEDIA_BUS_FMT_SBGGR8_1X8,
 			.colorspace	= V4L2_COLORSPACE_SRGB,
 			.field		= V4L2_FIELD_NONE,
 			.width		= 640,
@@ -597,12 +597,12 @@ static const struct ov5647_mode ov5647_modes[] = {
 		.pixel_rate	= 55000000,
 		.hts		= 1852,
 		.vts		= 0x1f8,
-		.reg_list	= ov5647_640x480_10bpp,
-		.num_regs	= ARRAY_SIZE(ov5647_640x480_10bpp)
+		.reg_list	= ov5647_640x480_8bpp,
+		.num_regs	= ARRAY_SIZE(ov5647_640x480_8bpp)
 	},
 };
 
-/* Default sensor mode is 2x2 binned 640x480 SBGGR10_1X10. */
+/* Default sensor mode is 2x2 binned 640x480 SBGGR8_1X8. */
 #define OV5647_DEFAULT_MODE	(&ov5647_modes[2])
 #define OV5647_DEFAULT_FORMAT	(ov5647_modes[2].format)
 
@@ -956,7 +956,7 @@ static int ov5647_enum_mbus_code(struct v4l2_subdev *sd,
 	if (code->index > 0)
 		return -EINVAL;
 
-	code->code = MEDIA_BUS_FMT_SBGGR10_1X10;
+	code->code = MEDIA_BUS_FMT_SBGGR8_1X8;
 
 	return 0;
 }
@@ -967,7 +967,7 @@ static int ov5647_enum_frame_size(struct v4l2_subdev *sd,
 {
 	const struct v4l2_mbus_framefmt *fmt;
 
-	if (fse->code != MEDIA_BUS_FMT_SBGGR10_1X10 ||
+	if (fse->code != MEDIA_BUS_FMT_SBGGR8_1X8 ||
 	    fse->index >= ARRAY_SIZE(ov5647_modes))
 		return -EINVAL;
 
@@ -1195,7 +1195,7 @@ static int ov5647_s_analogue_gain(struct v4l2_subdev *sd, u32 val)
 {
 	int ret;
 
-	/* 10 bits of gain, 2 in the high register. */
+	/* 8 bits of gain, 2 in the high register. */
 	ret = ov5647_write(sd, OV5647_REG_GAIN_HI, (val >> 8) & 3);
 	if (ret)
 		return ret;
