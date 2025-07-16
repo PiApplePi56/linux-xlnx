@@ -56,26 +56,25 @@
 			gpios = <&gpio0 50 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_LEFT>;
 			gpio-key,wakeup;
-			autorepeat;	
-		
-			};
+			autorepeat;
+		};
 
-		// gpio-key3 {
-		// 	label = "ps_key2";
-		// 	status = "okay";
-		// 	gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;
-		// 	linux,code = <KEY_RIGHT>;
-		// 	gpio-key,wakeup;
-		// 	autorepeat;
+		gpio-key3 {
+			label = "ps_key2";
+			status = "okay";
+			gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_RIGHT>;
+			gpio-key,wakeup;
+			autorepeat;
 
 		// 	};
 
 	};
 
-	userkey {
-			compatible = "Pie,key";
-			status = "okay";
-			gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;
+	// userkey {
+	// 		compatible = "Pie,key";
+	// 		status = "okay";
+	// 		gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;
 
 	};
  
