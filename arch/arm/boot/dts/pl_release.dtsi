@@ -91,9 +91,31 @@
 		};
 		vid_apclk: vid_apclk {
 			#clock-cells = <0>;
-			clock-frequency = <200000000>;
+			clock-frequency = <100000000>;
 			compatible = "fixed-clock";
-		};		
+		};
+
+		camera_in_axi_vdma_0: dma@43000000 {
+			#dma-cells = <1>;
+			clock-names = "s_axi_lite_aclk", "m_axi_s2mm_aclk", "s_axis_s2mm_aclk";
+			clocks = <&clkc 15>, <&vid_apclk>, <&vid_apclk>;
+			compatible = "xlnx,axi-vdma-1.00.a";
+			interrupt-names = "s2mm_introut";
+			interrupt-parent = <&intc>;
+			interrupts = <0 55 4>;
+			reg = <0x43000000 0x10000>;
+			xlnx,addrwidth = <0x20>;
+			xlnx,flush-fsync = <0x1>;
+			xlnx,num-fstores = <0x3>;
+			dma-channel@43000030 {
+				compatible = "xlnx,axi-vdma-s2mm-channel";
+				interrupts = <0 55 4>;
+				xlnx,datawidth = <0x20>;
+				xlnx,device-id = <0x0>;
+				xlnx,genlock-mode;
+			};
+		};
+		
 		camera_in_csi2_rx: mipi_csi2_rx_subsystem@43c00000 {
 			clock-names = "lite_aclk", "dphy_clk_200M", "video_aclk";
 			clocks = <&clkc 15>, <&vid_apclk>, <&vid_apclk>;
@@ -171,26 +193,6 @@
 				};
 			};
 		};
-		camera_in_frmbuf_wr: v_frmbuf_wr@43c40000 {
-			#dma-cells = <1>;
-			clock-names = "ap_clk";
-			clocks = <&vid_apclk>;
-			compatible = "xlnx,v-frmbuf-wr-2.4", "xlnx,axi-frmbuf-wr-v2.2";
-			interrupt-names = "interrupt";
-			interrupt-parent = <&intc>;
-			interrupts = <0 31 4>;
-			reg = <0x43c40000 0x10000>;
-			reset-gpios = <&rst_gpio 0 1>;
-			xlnx,dma-addr-width = <32>;
-			xlnx,dma-align = <16>;
-			xlnx,max-height = <3072>;
-			xlnx,max-width = <4096>;
-			xlnx,pixels-per-clock = <2>;
-			xlnx,s-axi-ctrl-addr-width = <0x7>;
-			xlnx,s-axi-ctrl-data-width = <0x20>;
-			xlnx,vid-formats = "rgb888", "bgr888", "y8", "vuy888", "xvuy8888", "yuyv";
-			xlnx,video-width = <8>;
-		};
 		camera_in_gamma_lut: v_gamma_lut@43cb0000 {
 			clock-names = "ap_clk";
 			clocks = <&vid_apclk>;
@@ -217,49 +219,31 @@
 				gamma_port1camera_in_gamma_lut: port@1 {
 					reg = <1>;
 					xlnx,video-width = <8>;
-					gamma_outcamera_in_gamma_lut: endpoint {
-						remote-endpoint = <&camera_in_vpsscamera_in_gamma_lut>;
+					gamma_out: endpoint {
+						remote-endpoint = <&switch_in>;
 					};
 				};
 			};
 		};
-		camera_in_vpss: v_proc_ss@43cc0000 {
-			clock-names = "aclk";
+		camera_in_frmbuf_wr: v_frmbuf_wr@43c40000 {
+			#dma-cells = <1>;
+			clock-names = "ap_clk";
 			clocks = <&vid_apclk>;
-			compatible = "xlnx,v-vpss-csc";
-			reg = <0x43cc0000 0x10000>;
-			reset-gpios = <&rst_gpio 6 1>;
-			xlnx,colorspace-support = <0>;
-			xlnx,csc-enable-window = "false";
+			compatible = "xlnx,v-frmbuf-wr-2.4", "xlnx,axi-frmbuf-wr-v2.2";
+			interrupt-names = "interrupt";
+			interrupt-parent = <&intc>;
+			interrupts = <0 31 4>;
+			reg = <0x43c40000 0x10000>;
+			reset-gpios = <&rst_gpio 0 1>;
+			xlnx,dma-addr-width = <32>;
+			xlnx,dma-align = <16>;
 			xlnx,max-height = <3072>;
 			xlnx,max-width = <4096>;
-			xlnx,num-video-components = <3>;
-			xlnx,samples-per-clk = <2>;
-			xlnx,topology = <3>;
-			xlnx,use-uram = <0>;
+			xlnx,pixels-per-clock = <2>;
+			xlnx,s-axi-ctrl-addr-width = <0x7>;
+			xlnx,s-axi-ctrl-data-width = <0x20>;
+			xlnx,vid-formats = "rgb888", "bgr888", "y8", "vuy888", "xvuy8888", "yuyv";
 			xlnx,video-width = <8>;
-			csc_portscamera_in_vpss: ports {
-				#address-cells = <1>;
-				#size-cells = <0>;
-				csc_port0camera_in_vpss: port@0 {
-					/* For xlnx,video-format user needs to fill as per their requirement */
-					reg = <0>;
-					xlnx,video-format = <XVIP_VF_RBG>;
-					xlnx,video-width = <8>;
-					camera_in_vpsscamera_in_gamma_lut: endpoint {
-						remote-endpoint = <&gamma_outcamera_in_gamma_lut>;
-					};
-				};
-				csc_port1camera_in_vpss: port@1 {
-					/* For xlnx,video-format user needs to fill as per their requirement */
-					reg = <1>;
-					xlnx,video-format = <XVIP_VF_RBG>;
-					xlnx,video-width = <8>;
-					csc_outcamera_in_vpss: endpoint {
-						remote-endpoint = <&camera_in_frmbuf_wrcamera_in_vpss>;
-					};
-				};
-			};
 		};
 		clk_wiz_0: clk_wiz@43c30000 {
 			#clock-cells = <1>;
@@ -357,18 +341,149 @@
 			xlnx,tri-default = <0xFFFFFFFF>;
 			xlnx,tri-default-2 = <0xFFFFFFFF>;
 		};
-		vcap_camera_in_vpss {
+	
+		camera_in_axis_broadcaster_0: axis_broadcastercamera_in_axis_broadcaster_0@0 {
+			compatible = "xlnx,axis-broadcaster-1.1";
+			axis_broadcaster_portscamera_in_axis_broadcaster_0: ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				axis_broad_port1camera_in_axis_broadcaster_0: port@0 {
+					reg = <0>;
+					switch_in: endpoint {
+						remote-endpoint = <&gamma_out>;
+					};	
+				};
+				axis_broad_port1camera_in_axis_broadcaster_1: port@1 {
+					reg = <1>;
+					switch_out_csc: endpoint {
+						remote-endpoint = <&csc_in>;
+					};
+				};
+				axis_broad_port2camera_in_axis_broadcaster_2: port@2 {
+					reg = <2>;
+					switch_out_scaler: endpoint {
+						remote-endpoint = <&scaler_in>;
+					};
+				};
+			};
+		};
+
+		camera_in_scaler_display: v_proc_ss@43d00000 {
+			clock-names = "aclk_axis", "aclk_ctrl";
+			clocks = <&vid_apclk>, <&clkc 15>;
+			compatible = "xlnx,vpss-scaler-2.2";
+			reg = <0x43d00000 0x40000>;
+			reset-gpios = <&rst_gpio 1 1>;
+			xlnx,colorspace-support = <2>;
+			xlnx,csc-enable-window = "true";
+			xlnx,enable-csc = "false";
+			xlnx,h-scaler-phases = <64>;
+			xlnx,h-scaler-taps = <6>;
+			xlnx,max-height = <3072>;
+			xlnx,max-num-phases = <64>;
+			xlnx,max-width = <4096>;
+			xlnx,num-hori-taps = <6>;
+			xlnx,num-vert-taps = <6>;
+			xlnx,pix-per-clk = <2>;
+			xlnx,samples-per-clk = <2>;
+			xlnx,scaler-algorithm = <0>;
+			xlnx,topology = <0>;
+			xlnx,use-uram = <0>;
+			xlnx,v-scaler-phases = <64>;
+			xlnx,v-scaler-taps = <6>;
+			xlnx,video-width = <8>;
+			scaler_portscamera_in_v_proc_ss_display: ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				scaler_port0camera_in_v_proc_ss_display: port@0 {
+					/* For xlnx,video-format user needs to fill as per their requirement */
+					reg = <0>;
+					xlnx,video-format = <XVIP_VF_RBG>;
+					xlnx,video-width = <8>;
+					scaler_in: endpoint {
+						remote-endpoint = <&switch_out_scaler>;
+					};
+				};
+				scaler_port1camera_in_v_proc_ss_display: port@1 {
+					/* For xlnx,video-format user needs to fill as per their requirement */
+					reg = <1>;
+					xlnx,video-format = <XVIP_VF_RBG>;
+					xlnx,video-width = <8>;
+					scaler_out: endpoint {
+						remote-endpoint = <&vdma_in_preview>;
+					};
+				};
+			};
+		};
+
+		camera_in_vpss: v_proc_ss@43cc0000 {
+			clock-names = "aclk";
+			clocks = <&vid_apclk>;
+			compatible = "xlnx,v-vpss-csc";
+			reg = <0x43cc0000 0x10000>;
+			reset-gpios = <&rst_gpio 6 1>;
+			xlnx,colorspace-support = <0>;
+			xlnx,csc-enable-window = "false";
+			xlnx,max-height = <3072>;
+			xlnx,max-width = <4096>;
+			xlnx,num-video-components = <3>;
+			xlnx,samples-per-clk = <2>;
+			xlnx,topology = <3>;
+			xlnx,use-uram = <0>;
+			xlnx,video-width = <8>;
+			csc_portscamera_in_vpss: ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				csc_port0camera_in_vpss: port@0 {
+					/* For xlnx,video-format user needs to fill as per their requirement */
+					reg = <0>;
+					xlnx,video-format = <XVIP_VF_RBG>;
+					xlnx,video-width = <8>;
+					csc_in: endpoint {
+						remote-endpoint = <&switch_out_csc>;
+					};
+				};
+				csc_port1camera_in_vpss: port@1 {
+					/* For xlnx,video-format user needs to fill as per their requirement */
+					reg = <1>;
+					xlnx,video-format = <XVIP_VF_RBG>;
+					xlnx,video-width = <8>;
+					csc_out: endpoint {
+						remote-endpoint = <&frmbuf_wr_camera>;
+					};
+				};
+			};
+		};
+
+		vcap_camera_in {
 			compatible = "xlnx,video";
 			dma-names = "port0";
 			dmas = <&camera_in_frmbuf_wr 0>;
-			vcap_portscamera_in_vpss: ports {
+			vcap_ports_camera_in: ports {
 				#address-cells = <1>;
 				#size-cells = <0>;
-				vcap_portcamera_in_vpss: port@0 {
+				vcap_port_camera_in: port@0 {
 					direction = "input";
 					reg = <0>;
-					camera_in_frmbuf_wrcamera_in_vpss: endpoint {
-						remote-endpoint = <&csc_outcamera_in_vpss>;
+					frmbuf_wr_camera: endpoint {
+						remote-endpoint = <&csc_out>;
+					};
+				};
+			};
+		};
+
+		vcap_camera_display_preview {
+			compatible = "xlnx,video";
+			dma-names = "port0";
+			dmas = <&camera_in_axi_vdma_0 0>;
+			vcap_in_display: ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				vcap_preview: port@0 {
+					direction = "input";
+					reg = <0>;
+					vdma_in_preview: endpoint {
+						remote-endpoint = <&scaler_out>;
 					};
 				};
 			};

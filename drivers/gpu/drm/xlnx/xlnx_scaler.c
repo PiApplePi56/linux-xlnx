@@ -30,8 +30,8 @@
 
 #include "xlnx_bridge.h"
 
-#define XSCALER_MAX_WIDTH		(3840)
-#define XSCALER_MAX_HEIGHT		(2160)
+#define XSCALER_MAX_WIDTH		(8192)
+#define XSCALER_MAX_HEIGHT		(4320)
 #define XSCALER_MAX_PHASES		(64)
 #define XSCALER_MIN_WIDTH		(64)
 #define XSCALER_MIN_HEIGHT		(64)
