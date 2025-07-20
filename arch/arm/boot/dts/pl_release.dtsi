@@ -95,25 +95,25 @@
 			compatible = "fixed-clock";
 		};
 
-		camera_in_axi_vdma_0: dma@43000000 {
+		camera_in_v_frmbuf_wr_rgb: v_frmbuf_wr@43c20000 {
 			#dma-cells = <1>;
-			clock-names = "s_axi_lite_aclk", "m_axi_s2mm_aclk", "s_axis_s2mm_aclk";
-			clocks = <&clkc 15>, <&vid_apclk>, <&vid_apclk>;
-			compatible = "xlnx,axi-vdma-1.00.a";
-			interrupt-names = "s2mm_introut";
+			clock-names = "ap_clk";
+			clocks = <&vid_apclk>;
+			compatible = "xlnx,v-frmbuf-wr-2.4", "xlnx,axi-frmbuf-wr-v2.2";
+			interrupt-names = "interrupt";
 			interrupt-parent = <&intc>;
 			interrupts = <0 55 4>;
-			reg = <0x43000000 0x10000>;
-			xlnx,addrwidth = <0x20>;
-			xlnx,flush-fsync = <0x1>;
-			xlnx,num-fstores = <0x3>;
-			dma-channel@43000030 {
-				compatible = "xlnx,axi-vdma-s2mm-channel";
-				interrupts = <0 55 4>;
-				xlnx,datawidth = <0x20>;
-				xlnx,device-id = <0x0>;
-				xlnx,genlock-mode;
-			};
+			reg = <0x43c20000 0x10000>;
+			reset-gpios = <&rst_gpio 7 1>;
+			xlnx,dma-addr-width = <32>;
+			xlnx,dma-align = <16>;
+			xlnx,max-height = <720>;
+			xlnx,max-width = <1280>;
+			xlnx,pixels-per-clock = <2>;
+			xlnx,s-axi-ctrl-addr-width = <0x7>;
+			xlnx,s-axi-ctrl-data-width = <0x20>;
+			xlnx,vid-formats = "rgb888", "bgr888";
+			xlnx,video-width = <8>;
 		};
 		
 		camera_in_csi2_rx: mipi_csi2_rx_subsystem@43c00000 {
@@ -334,7 +334,7 @@
 			xlnx,all-outputs-2 = <0x0>;
 			xlnx,dout-default = <0x00000000>;
 			xlnx,dout-default-2 = <0x00000000>;
-			xlnx,gpio-width = <0x7>;
+			xlnx,gpio-width = <0x8>;
 			xlnx,gpio2-width = <0x20>;
 			xlnx,interrupt-present = <0x0>;
 			xlnx,is-dual = <0x0>;
@@ -371,7 +371,7 @@
 		camera_in_scaler_display: v_proc_ss@43d00000 {
 			clock-names = "aclk_axis", "aclk_ctrl";
 			clocks = <&vid_apclk>, <&clkc 15>;
-			compatible = "xlnx,vpss-scaler-2.2";
+			compatible = "xlnx,v-vpss-scaler-2.2";
 			reg = <0x43d00000 0x40000>;
 			reset-gpios = <&rst_gpio 1 1>;
 			xlnx,colorspace-support = <2>;
@@ -410,7 +410,7 @@
 					xlnx,video-format = <XVIP_VF_RBG>;
 					xlnx,video-width = <8>;
 					scaler_out: endpoint {
-						remote-endpoint = <&vdma_in_preview>;
+						remote-endpoint = <&frmbuf_wr_preview>;
 					};
 				};
 			};
@@ -457,8 +457,8 @@
 
 		vcap_camera_in {
 			compatible = "xlnx,video";
-			dma-names = "port0";
-			dmas = <&camera_in_frmbuf_wr 0>;
+			dma-names = "port0", "port1";
+			dmas = <&camera_in_frmbuf_wr 0>, <&camera_in_v_frmbuf_wr_rgb 0>;
 			vcap_ports_camera_in: ports {
 				#address-cells = <1>;
 				#size-cells = <0>;
@@ -469,20 +469,10 @@
 						remote-endpoint = <&csc_out>;
 					};
 				};
-			};
-		};
-
-		vcap_camera_display_preview {
-			compatible = "xlnx,video";
-			dma-names = "port0";
-			dmas = <&camera_in_axi_vdma_0 0>;
-			vcap_in_display: ports {
-				#address-cells = <1>;
-				#size-cells = <0>;
-				vcap_preview: port@0 {
+				vcap_port_preview_in: port@1 {
 					direction = "input";
-					reg = <0>;
-					vdma_in_preview: endpoint {
+					reg = <1>;
+					frmbuf_wr_preview: endpoint {
 						remote-endpoint = <&scaler_out>;
 					};
 				};
