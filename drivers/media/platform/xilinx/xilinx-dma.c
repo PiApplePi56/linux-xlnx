@@ -1293,6 +1293,7 @@ int xvip_dma_init(struct xvip_composite_device *xdev, struct xvip_dma *dma,
 		pix_mp->colorspace = V4L2_COLORSPACE_SRGB;
 		pix_mp->field = V4L2_FIELD_NONE;
 		pix_mp->width = XVIP_DMA_DEF_WIDTH;
+		pix_mp->height = XVIP_DMA_DEF_HEIGHT;
 
 		/* Handling contiguous data with mplanes */
 		if (dma->fmtinfo->buffers == 1) {
