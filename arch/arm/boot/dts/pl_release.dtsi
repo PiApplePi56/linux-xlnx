@@ -457,6 +457,7 @@
 
 		vcap_camera_in {
 			compatible = "xlnx,video";
+			xlnx,atomic_streamon;
 			dma-names = "port0", "port1";
 			dmas = <&camera_in_frmbuf_wr 0>, <&camera_in_v_frmbuf_wr_rgb 0>;
 			vcap_ports_camera_in: ports {
