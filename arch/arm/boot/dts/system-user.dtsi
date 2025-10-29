@@ -67,14 +67,7 @@
 			gpio-key,wakeup;
 			autorepeat;
 
-		// 	};
-
-	};
-
-	// userkey {
-	// 		compatible = "Pie,key";
-	// 		status = "okay";
-	// 		gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;
+		};
 
 	};
  
@@ -198,45 +191,45 @@
 
 &amba_pl {
 
-	drm_pl_disp_hdmi {
-		compatible = "xlnx,pl-disp";
-		dmas = <&hdmi_out_v_frmbuf_rd_0 0>;
-		dma-names = "dma0";
-		xlnx,vformat = "BG24";
-		xlnx,bridge = <&hdmi_out_hdmi_vtc>;
+	// drm_pl_disp_hdmi {
+	// 	compatible = "xlnx,pl-disp";
+	// 	dmas = <&hdmi_out_v_frmbuf_rd_0 0>;
+	// 	dma-names = "dma0";
+	// 	xlnx,vformat = "BG24";
+	// 	xlnx,bridge = <&hdmi_out_hdmi_vtc>;
 
-		ports {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			port@0 {
-				reg = <0>;
-				pl_disp_crtc_hdmi:endpoint {
-					remote-endpoint = <&hdmi_encoder>;
-				};
-			};
-		};
-	};
+	// 	ports {
+	// 		#address-cells = <1>;
+	// 		#size-cells = <0>;
+	// 		port@0 {
+	// 			reg = <0>;
+	// 			pl_disp_crtc_hdmi:endpoint {
+	// 				remote-endpoint = <&hdmi_encoder>;
+	// 			};
+	// 		};
+	// 	};
+	// };
 
-	hdmi_drm{
+	// hdmi_drm{
 		
-		compatible = "dglnt,dglnt-hdmi";
-		status = "okay";
+	// 	compatible = "dglnt,dglnt-hdmi";
+	// 	status = "okay";
 
-		clocks = <&hdmi_pclk>, <&hdmi_pclk_5x>;
-		clock-names = "hdmi_pclk", "hdmi_pclk_5x";
-    	clk-num = <2>;															
-		ddc-i2c-bus = <&i2c0>;
-		hpd-gpios = <&gpio0 55 GPIO_ACTIVE_HIGH>;
+	// 	clocks = <&misc_clk_1>, <&misc_clk_2>;
+	// 	clock-names = "hdmi_pclk", "hdmi_pclk_5x";
+    // 	clk-num = <2>;															
+	// 	ddc-i2c-bus = <&i2c0>;
+	// 	hpd-gpios = <&gpio0 55 GPIO_ACTIVE_HIGH>;
 
-		ports {
-				#address-cells = <1>;
-				#size-cells = <0>;
-			port@0 {
-				reg = <0>;
-				hdmi_encoder: endpoint {
-					remote-endpoint = <&pl_disp_crtc_hdmi>;
-				};
-			};
-		};
-	};
+	// 	ports {
+	// 			#address-cells = <1>;
+	// 			#size-cells = <0>;
+	// 		port@0 {
+	// 			reg = <0>;
+	// 			hdmi_encoder: endpoint {
+	// 				remote-endpoint = <&pl_disp_crtc_hdmi>;
+	// 			};
+	// 		};
+	// 	};
+	// };
 };
