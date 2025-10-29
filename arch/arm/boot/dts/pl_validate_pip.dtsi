@@ -66,6 +66,7 @@
 			interrupt-parent = <&intc>;
 			interrupts = <0 32 4>;
 			reg = <0x43c10000 0x10000>;
+			reset-gpios = <&rst_gpio 1 1>;
 			xlnx,max-height = <1080>;
 			xlnx,max-width = <1920>;
 			xlnx,ppc = <1>;
@@ -76,7 +77,7 @@
 				#size-cells = <0>;
 				port@0 {
 					reg = <0>;
-					xlnx,video-format = <XVIP_VF_XBGR>;
+					xlnx,video-format = <XVIP_VF_RBG>;
 					xlnx,video-width = <8>;
 					tpg_out: endpoint {
 						remote-endpoint = <&camera_in_vpss_tpg_out>;
@@ -106,7 +107,7 @@
 					//port 0 must declare first, or it will cause kernel panic
 					/* For xlnx,video-format user needs to fill as per their requirement */
 					reg = <0>;
-					xlnx,video-format = <XVIP_VF_XBGR>;
+					xlnx,video-format = <XVIP_VF_RBG>;
 					xlnx,video-width = <8>;
 					camera_in_vpss_tpg_out: endpoint {
 						remote-endpoint = <&tpg_out>;
@@ -115,7 +116,7 @@
 				csc_port1camera_in_vpss: port@1 {
 					/* For xlnx,video-format user needs to fill as per their requirement */
 					reg = <1>;
-					xlnx,video-format = <XVIP_VF_XBGR>;
+					xlnx,video-format = <XVIP_VF_RBG>;
 					xlnx,video-width = <8>;
 					csc_outcamera_in_vpss: endpoint {
 						remote-endpoint = <&camera_in_frmbuf_wrcamera_in_vpss>;
@@ -135,7 +136,7 @@
 		};
 		// hdmi_out_hdmi_vtc: v_tc@43c40000 {
 		// 	clock-names = "clk", "s_axi_aclk";
-		// 	clocks = <&clkc 15>, <&clkc 15>;
+		// 	clocks = <&misc_clk_1>, <&clkc 15>;
 		// 	compatible = "xlnx,v-tc-6.2", "xlnx,v-tc-6.1";
 		// 	interrupt-names = "irq";
 		// 	interrupt-parent = <&intc>;
