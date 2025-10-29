@@ -8,7 +8,7 @@
 / {
 	cpus {
 		cpu@0 {
-			operating-points = <766666 1000000 383333 1000000>;
+			operating-points = <666666 1000000 383333 1000000>;
 		};
 	};
 };
@@ -22,14 +22,6 @@
 	emio-gpio-width = <10>;
 	gpio-mask-high = <0x0>;
 	gpio-mask-low = <0x5600>;
-};
-&i2c0 {
-	clock-frequency = <400000>;
-	status = "okay";
-};
-&i2c1 {
-	clock-frequency = <400000>;
-	status = "okay";
 };
 &intc {
 	num_cpus = <2>;
