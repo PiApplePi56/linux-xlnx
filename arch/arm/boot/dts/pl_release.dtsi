@@ -107,8 +107,8 @@
 			reset-gpios = <&rst_gpio 7 1>;
 			xlnx,dma-addr-width = <32>;
 			xlnx,dma-align = <16>;
-			xlnx,max-height = <720>;
-			xlnx,max-width = <1280>;
+			xlnx,max-height = <3072>;
+			xlnx,max-width = <4096>;
 			xlnx,pixels-per-clock = <2>;
 			xlnx,s-axi-ctrl-addr-width = <0x7>;
 			xlnx,s-axi-ctrl-data-width = <0x20>;
@@ -457,7 +457,7 @@
 
         vcap {
             compatible = "xlnx,video";
-            xlnx,atomic_streamon;
+            // xlnx,atomic_streamon;
             dma-names = "port0", "port1";
             dmas = <&camera_in_frmbuf_wr 0>, <&camera_in_v_frmbuf_wr_rgb 0>;
             

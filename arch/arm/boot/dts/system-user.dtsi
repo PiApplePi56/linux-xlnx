@@ -8,7 +8,7 @@
 	model = "Zynq7000";
 	compatible = "xlnx,zynq-zc702", "xlnx,zynq-7000";
 	chosen {
-		bootargs = "console=ttyPS0,115200 earlycon cma=64M root=/dev/mmcblk1p1 rw rootwait";
+		bootargs = "console=ttyPS0,115200 earlycon cma=256M root=/dev/mmcblk1p1 rw rootwait";
 		stdout-path = "serial0:115200n8";
 	};
 
