@@ -126,7 +126,7 @@
 			reg = <0x43c00000 0x2000>;
 			video-reset-gpios = <&rst_gpio 4 1>;
 			xlnx,axis-tdata-width = <32>;
-			xlnx,csi-pxl-format = <0x2b>;
+			xlnx,csi-pxl-format = <0x2a>;
 			xlnx,max-lanes = <2>;
 			xlnx,ppc = <2>;
 			xlnx,vfb ;
@@ -139,7 +139,7 @@
 					reg = <0>;
 					xlnx,cfa-pattern = "rggb";
 					xlnx,video-format = <XVIP_VF_MONO_SENSOR>;
-					xlnx,video-width = <10>;
+					xlnx,video-width = <8>;
 					mipi_csi_incamera_in_csi2_rx: endpoint {
 						data-lanes = <1 2>;
 						remote-endpoint=<&ov5647_ep>;
@@ -455,29 +455,34 @@
 			};
 		};
 
-		vcap_camera_in {
-			compatible = "xlnx,video";
-			xlnx,atomic_streamon;
-			dma-names = "port0", "port1";
-			dmas = <&camera_in_frmbuf_wr 0>, <&camera_in_v_frmbuf_wr_rgb 0>;
-			vcap_ports_camera_in: ports {
-				#address-cells = <1>;
-				#size-cells = <0>;
-				vcap_port_camera_in: port@0 {
-					direction = "input";
-					reg = <0>;
-					frmbuf_wr_camera: endpoint {
-						remote-endpoint = <&csc_out>;
-					};
-				};
-				vcap_port_preview_in: port@1 {
-					direction = "input";
-					reg = <1>;
-					frmbuf_wr_preview: endpoint {
-						remote-endpoint = <&scaler_out>;
-					};
-				};
-			};
-		};
+        vcap {
+            compatible = "xlnx,video";
+            xlnx,atomic_streamon;
+            dma-names = "port0", "port1";
+            dmas = <&camera_in_frmbuf_wr 0>, <&camera_in_v_frmbuf_wr_rgb 0>;
+            
+            vcap_ports_camera_in: ports {
+                #address-cells = <1>;
+                #size-cells = <0>;
+                
+                /* Port 0: CSC path to YUYV */
+                vcap_port0_camera_in: port@0 {
+                    direction = "input";
+                    reg = <0>;
+                    frmbuf_wr_camera: endpoint {
+                        remote-endpoint = <&csc_out>;
+                    };
+                };
+                
+                /* Port 1: Scaler path to RGB */
+                vcap_port1_camera_in: port@1 {
+                    direction = "input";
+                    reg = <1>;
+                    frmbuf_wr_preview: endpoint {
+                        remote-endpoint = <&scaler_out>;
+                    };
+                };
+            };
+        };
 	};
 };

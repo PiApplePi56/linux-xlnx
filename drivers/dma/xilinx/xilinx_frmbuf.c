@@ -1176,9 +1176,11 @@ static void xilinx_frmbuf_halt(struct xilinx_frmbuf_chan *chan)
  */
 static void xilinx_frmbuf_start(struct xilinx_frmbuf_chan *chan)
 {
+	pr_info("frmbuf_start called, setting AP_START bit\n");
 	frmbuf_set(chan, XILINX_FRMBUF_CTRL_OFFSET,
 		   XILINX_FRMBUF_CTRL_AP_START | chan->mode);
 	chan->idle = false;
+	pr_info("frmbuf_start completed, idle now = %d\n", chan->idle);
 }
 
 /**
@@ -1215,16 +1217,23 @@ static void xilinx_frmbuf_start_transfer(struct xilinx_frmbuf_chan *chan)
 
 	xdev = container_of(chan, struct xilinx_frmbuf_device, chan);
 
-	if (!chan->idle)
+	pr_info("frmbuf_start_transfer: idle=%d, pending_list_empty=%d\n", 
+		chan->idle, list_empty(&chan->pending_list));
+
+	if (!chan->idle) {
+		pr_info("frmbuf_start_transfer: returning early, not idle\n");
 		return;
+	}
 
 	if (chan->staged_desc) {
 		chan->active_desc = chan->staged_desc;
 		chan->staged_desc = NULL;
 	}
 
-	if (list_empty(&chan->pending_list))
+	if (list_empty(&chan->pending_list)) {
+		pr_info("frmbuf_start_transfer: returning early, pending list empty\n");
 		return;
+	}
 
 	desc = list_first_entry(&chan->pending_list,
 				struct xilinx_frmbuf_tx_descriptor,
@@ -1258,6 +1267,8 @@ static void xilinx_frmbuf_start_transfer(struct xilinx_frmbuf_chan *chan)
 	}
 
 	/* HW expects these parameters to be same for one transaction */
+	pr_info("frmbuf configuring: width=%u, height=%u, stride=%u, fmt=%u\n",
+		desc->hw.hsize, desc->hw.vsize, desc->hw.stride, chan->vid_fmt->id);
 	frmbuf_write(chan, XILINX_FRMBUF_WIDTH_OFFSET, desc->hw.hsize);
 	frmbuf_write(chan, XILINX_FRMBUF_STRIDE_OFFSET, desc->hw.stride);
 	frmbuf_write(chan, XILINX_FRMBUF_HEIGHT_OFFSET, desc->hw.vsize);
@@ -1287,6 +1298,7 @@ static void xilinx_frmbuf_issue_pending(struct dma_chan *dchan)
 	struct xilinx_frmbuf_chan *chan = to_xilinx_chan(dchan);
 	unsigned long flags;
 
+	pr_info("frmbuf_issue_pending called\n");
 	spin_lock_irqsave(&chan->lock, flags);
 	xilinx_frmbuf_start_transfer(chan);
 	spin_unlock_irqrestore(&chan->lock, flags);
@@ -1333,6 +1345,7 @@ static irqreturn_t xilinx_frmbuf_irq_handler(int irq, void *data)
 	struct xilinx_frmbuf_tx_descriptor *desc;
 
 	status = frmbuf_read(chan, XILINX_FRMBUF_ISR_OFFSET);
+	pr_info("frmbuf_irq_handler: irq=%d, status=0x%x\n", irq, status);
 	if (!(status & XILINX_FRMBUF_ISR_ALL_IRQ_MASK))
 		return IRQ_NONE;
 

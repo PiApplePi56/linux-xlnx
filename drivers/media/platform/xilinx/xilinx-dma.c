@@ -124,9 +124,14 @@ static int xvip_pipeline_set_stream(struct xvip_pipeline *pipe, bool on)
 	mutex_lock(&pipe->lock);
 	xdev = pipe->xdev;
 
+	pr_info("xvip_pipeline_set_stream: on=%d, stream_count=%d, num_dmas=%d, atomic_streamon=%d\n",
+		on, pipe->stream_count, pipe->num_dmas, xdev->atomic_streamon);
+
 	if (on) {
 		if (pipe->stream_count == pipe->num_dmas - 1 || xdev->atomic_streamon) {
+			pr_info("xvip_pipeline_set_stream: calling xvip_graph_pipeline_start_stop\n");
 			ret = xvip_graph_pipeline_start_stop(xdev, pipe, true);
+			pr_info("xvip_pipeline_set_stream: returned %d\n", ret);
 			if (ret < 0)
 				goto done;
 		}
@@ -383,6 +388,9 @@ static void xvip_dma_buffer_queue(struct vb2_buffer *vb)
 	u32 fid = ~0;
 	u32 bpl;
 
+	dev_info(dma->xdev->dev, "buffer_queue called, addr=0x%pad, streaming=%d\n", 
+		 &addr, vb2_is_streaming(&dma->queue));
+
 	if (dma->queue.type == V4L2_BUF_TYPE_VIDEO_CAPTURE ||
 	    dma->queue.type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
 		flags = DMA_PREP_INTERRUPT | DMA_CTRL_ACK;
@@ -515,6 +523,9 @@ static void xvip_dma_buffer_queue(struct vb2_buffer *vb)
 					EARLY_CALLBACK_START_DESC);
 	dmaengine_submit(desc);
 
+	dev_info(dma->xdev->dev, "dmaengine_submit done, now calling issue_pending, streaming=%d\n",
+		 vb2_is_streaming(&dma->queue));
+
 	if (vb2_is_streaming(&dma->queue))
 		dma_async_issue_pending(dma->dma);
 }
@@ -526,6 +537,7 @@ static int xvip_dma_start_streaming(struct vb2_queue *vq, unsigned int count)
 	struct xvip_pipeline *pipe;
 	int ret;
 
+	dev_info(dma->xdev->dev, "DMA start_streaming called, low_latency_cap=%d\n", dma->low_latency_cap);
 	dma->sequence = 0;
 	dma->prev_fid = ~0;
 
@@ -561,13 +573,18 @@ static int xvip_dma_start_streaming(struct vb2_queue *vq, unsigned int count)
 	 * applications will start DMA using S_CTRL at later point of time.
 	 */
 	if (!dma->low_latency_cap) {
+		dev_info(dma->xdev->dev, "Starting DMA and pipeline\n");
+		dev_info(dma->xdev->dev, "Calling dma_async_issue_pending before pipeline start\n");
 		dma_async_issue_pending(dma->dma);
+		dev_info(dma->xdev->dev, "dma_async_issue_pending returned\n");
 
 		/* Start the pipeline. */
 		ret = xvip_pipeline_set_stream(pipe, true);
+		dev_info(dma->xdev->dev, "xvip_pipeline_set_stream returned %d\n", ret);
 		if (ret < 0)
 			goto error_stop;
 	} else {
+		dev_warn(dma->xdev->dev, "Low latency mode enabled - pipeline NOT started\n");
 		/* For low latency capture, return the first buffer early
 		 * so that consumer can initialize until we start DMA.
 		 */
