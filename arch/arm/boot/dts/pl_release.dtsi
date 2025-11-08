@@ -126,7 +126,7 @@
 			reg = <0x43c00000 0x2000>;
 			video-reset-gpios = <&rst_gpio 4 1>;
 			xlnx,axis-tdata-width = <32>;
-			xlnx,csi-pxl-format = <0x2a>;
+			xlnx,csi-pxl-format = <0x2b>;
 			xlnx,max-lanes = <2>;
 			xlnx,ppc = <2>;
 			xlnx,vfb ;
@@ -139,7 +139,7 @@
 					reg = <0>;
 					xlnx,cfa-pattern = "rggb";
 					xlnx,video-format = <XVIP_VF_MONO_SENSOR>;
-					xlnx,video-width = <8>;
+					xlnx,video-width = <10>;
 					mipi_csi_incamera_in_csi2_rx: endpoint {
 						data-lanes = <1 2>;
 						remote-endpoint=<&ov5647_ep>;
