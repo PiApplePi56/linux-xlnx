@@ -378,19 +378,19 @@
 			xlnx,csc-enable-window = "true";
 			xlnx,enable-csc = "false";
 			xlnx,h-scaler-phases = <64>;
-			xlnx,h-scaler-taps = <6>;
+			xlnx,h-scaler-taps = <4>;
 			xlnx,max-height = <3072>;
 			xlnx,max-num-phases = <64>;
 			xlnx,max-width = <4096>;
-			xlnx,num-hori-taps = <6>;
-			xlnx,num-vert-taps = <6>;
+			xlnx,num-hori-taps = <4>;
+			xlnx,num-vert-taps = <4>;
 			xlnx,pix-per-clk = <2>;
 			xlnx,samples-per-clk = <2>;
 			xlnx,scaler-algorithm = <0>;
 			xlnx,topology = <0>;
 			xlnx,use-uram = <0>;
 			xlnx,v-scaler-phases = <64>;
-			xlnx,v-scaler-taps = <6>;
+			xlnx,v-scaler-taps = <4>;
 			xlnx,video-width = <8>;
 			scaler_portscamera_in_v_proc_ss_display: ports {
 				#address-cells = <1>;
