@@ -101,6 +101,7 @@
 	display@0{
     	compatible = "ilitek,ili9341";
     	reg = <0>;
+		bgr;  
     	spi-max-frequency = <166666666>;
     	reset-gpios = <&gpio0 61 GPIO_ACTIVE_LOW>;
     	dc-gpios = <&gpio0 62 GPIO_ACTIVE_HIGH>;
