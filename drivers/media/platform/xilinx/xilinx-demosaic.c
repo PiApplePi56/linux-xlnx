@@ -208,6 +208,7 @@ static int xdmsc_set_format(struct v4l2_subdev *subdev,
 	if (fmt->pad == XVIP_PAD_SOURCE) {
 		if (__format->code != MEDIA_BUS_FMT_RBG888_1X24 &&
 		    __format->code != MEDIA_BUS_FMT_RBG101010_1X30 &&
+			__format->code != MEDIA_BUS_FMT_RGB101010_1X30 &&
 		    __format->code != MEDIA_BUS_FMT_RBG121212_1X36 &&
 		    __format->code != MEDIA_BUS_FMT_RBG161616_1X48) {
 			dev_dbg(xdmsc->xvip.dev,

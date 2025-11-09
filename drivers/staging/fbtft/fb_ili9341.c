@@ -20,8 +20,8 @@
 #include "fbtft.h"
 
 #define DRVNAME		"fb_ili9341"
-#define WIDTH		240
-#define HEIGHT		320
+#define WIDTH		320
+#define HEIGHT		240
 #define TXBUFLEN	(4 * PAGE_SIZE)
 #define DEFAULT_GAMMA	"1F 1A 18 0A 0F 06 45 87 32 0A 07 02 07 05 00\n" \
 			"00 25 27 05 10 09 3A 78 4D 05 18 0D 38 3A 1F"
@@ -87,19 +87,19 @@ static int set_var(struct fbtft_par *par)
 	switch (par->info->var.rotate) {
 	case 0:
 		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE,
-			  MEM_X | (par->bgr << MEM_BGR));
+			   (par->bgr << MEM_BGR));
 		break;
 	case 270:
 		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE,
-			  MEM_V | MEM_L | (par->bgr << MEM_BGR));
+			  MEM_V | MEM_X | MEM_L | (par->bgr << MEM_BGR));
 		break;
 	case 180:
 		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE,
-			  MEM_Y | (par->bgr << MEM_BGR));
+			  MEM_Y | MEM_X | (par->bgr << MEM_BGR));
 		break;
 	case 90:
 		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE,
-			  MEM_Y | MEM_X | MEM_V | (par->bgr << MEM_BGR));
+			  MEM_Y | MEM_V | (par->bgr << MEM_BGR));
 		break;
 	}
 

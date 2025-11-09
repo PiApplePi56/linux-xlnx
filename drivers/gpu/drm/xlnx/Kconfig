@@ -151,3 +151,15 @@ config DRM_XLNX_HDCP
 	  Choose this option if you have a FPGA display pipeline using
 	  Xilinx FPGA's in IP. This driver provides the kernel mode
 	  setting functionalities for the IP.
+
+config DRM_XLNX_ATK_LCD
+	tristate "Alientek LCD DRM TX Driver"
+	depends on DRM_XLNX
+	help
+	  LCD DRM slave encoder for Video-out on Alientek boards.
+
+config DRM_XLNX_DGLNT_HDMI
+	tristate "Digilent HDMI DRM TX Driver"
+	depends on DRM_XLNX
+	help
+	  HDMI DRM slave encoder for Digilent DVI-Transmitter.

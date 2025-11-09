@@ -2142,3 +2142,9 @@ FORCE:
 # Declare the contents of the PHONY variable as phony.  We keep that
 # information in a variable so we can use it in if_changed and friends.
 .PHONY: $(PHONY)
+
+trans:
+	scp arch/arm/boot/zImage root@192.168.31.126:/run/media/boot-mmcblk0p1
+	scp arch/arm/boot/dts/system.dtb root@192.168.31.126:/run/media/boot-mmcblk0p1
+	scp /mnt/c/Code/vivado_prj/camera_on_zynq/system.bit root@192.168.31.126:/run/media/boot-mmcblk0p1
+	
