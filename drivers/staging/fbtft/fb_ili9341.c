@@ -7,6 +7,12 @@
  * of emulating this using 8-bit transfer.
  * This is done by transferring eight 9-bit words in 9 bytes.
  *
+ * Modified to support RGB666 (18-bit) mode with 24-bit RGB888 framebuffer
+ * Device Tree property 'bgr' controls hardware BGR mode:
+ *   - Set 'bgr' property to enable RGB->BGR conversion in hardware
+ *   - Omit 'bgr' property for native RGB mode (no conversion)
+ *
+ *
  * Copyright (C) 2013 Christian Vogelgsang
  * Based on adafruit22fb.c by Noralf Tronnes
  */
@@ -25,6 +31,50 @@
 #define TXBUFLEN	(4 * PAGE_SIZE)
 #define DEFAULT_GAMMA	"1F 1A 18 0A 0F 06 45 87 32 0A 07 02 07 05 00\n" \
 			"00 25 27 05 10 09 3A 78 4D 05 18 0D 38 3A 1F"
+
+/* Custom write_vmem function for RGB888 (24-bit) support */
+static int write_vmem24_bus8(struct fbtft_par *par, size_t offset, size_t len)
+{
+	u8 *vmem8;
+	u8 *txbuf = par->txbuf.buf;
+	size_t remain;
+	size_t to_copy;
+	size_t tx_array_size;
+	int ret = 0;
+
+	fbtft_par_dbg(DEBUG_WRITE_VMEM, par, "%s(offset=%zu, len=%zu)\n",
+		      __func__, offset, len);
+
+	/* For RGB888, we have 24-bit pixels (3 bytes per pixel) in framebuffer */
+	remain = len;  /* Total bytes to transfer */
+	vmem8 = (u8 *)(par->info->screen_buffer + offset);
+
+	gpiod_set_value(par->gpio.dc, 1);
+
+	/* non buffered write */
+	if (!par->txbuf.buf)
+		return par->fbtftops.write(par, vmem8, len);
+
+	/* buffered write */
+	tx_array_size = par->txbuf.len;
+
+	while (remain) {
+		to_copy = min(tx_array_size, remain);
+		dev_dbg(par->info->device, "to_copy=%zu, remain=%zu\n",
+			to_copy, remain - to_copy);
+
+		/* Direct copy - BGR conversion handled by hardware */
+		memcpy(txbuf, vmem8, to_copy);
+
+		vmem8 += to_copy;
+		ret = par->fbtftops.write(par, txbuf, to_copy);
+		if (ret < 0)
+			return ret;
+		remain -= to_copy;
+	}
+
+	return ret;
+}
 
 static int init_display(struct fbtft_par *par)
 {
@@ -48,7 +98,7 @@ static int init_display(struct fbtft_par *par)
 	write_reg(par, 0xC5, 0x35, 0x3E);
 	write_reg(par, 0xC7, 0xBE);
 	/* ------------memory access control------------------------ */
-	write_reg(par, MIPI_DCS_SET_PIXEL_FORMAT, 0x55); /* 16bit pixel */
+	write_reg(par, MIPI_DCS_SET_PIXEL_FORMAT, 0x66); /* DPI=DBI=6h */
 	/* ------------frame rate----------------------------------- */
 	write_reg(par, 0xB1, 0x00, 0x1B);
 	/* ------------Gamma---------------------------------------- */
@@ -80,26 +130,25 @@ static void set_addr_win(struct fbtft_par *par, int xs, int ys, int xe, int ye)
 #define MEM_X   BIT(6) /* MX column address order */
 #define MEM_V   BIT(5) /* MV row / column exchange */
 #define MEM_L   BIT(4) /* ML vertical refresh order */
+#define MEM_BGR BIT(3) /* RGB-BGR Order */
 #define MEM_H   BIT(2) /* MH horizontal refresh order */
-#define MEM_BGR (3) /* RGB-BGR Order */
 static int set_var(struct fbtft_par *par)
 {
 	switch (par->info->var.rotate) {
 	case 0:
-		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE,
-			   (par->bgr << MEM_BGR));
+		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE, MEM_BGR);
 		break;
 	case 270:
 		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE,
-			  MEM_V | MEM_X | MEM_L | (par->bgr << MEM_BGR));
+			  MEM_V | MEM_X | MEM_L | MEM_BGR);
 		break;
 	case 180:
 		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE,
-			  MEM_Y | MEM_X | (par->bgr << MEM_BGR));
+			  MEM_Y | MEM_X | MEM_BGR);
 		break;
 	case 90:
 		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE,
-			  MEM_Y | MEM_V | (par->bgr << MEM_BGR));
+			  MEM_Y | MEM_V | MEM_BGR);
 		break;
 	}
 
@@ -137,11 +186,13 @@ static struct fbtft_display display = {
 	.gamma_num = 2,
 	.gamma_len = 15,
 	.gamma = DEFAULT_GAMMA,
+	.bpp = 24, /* 24 bpp for RGB888 native support */
 	.fbtftops = {
 		.init_display = init_display,
 		.set_addr_win = set_addr_win,
 		.set_var = set_var,
 		.set_gamma = set_gamma,
+		.write_vmem = write_vmem24_bus8,
 	},
 };
 
