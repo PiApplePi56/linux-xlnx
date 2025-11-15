@@ -7,14 +7,32 @@
  * of emulating this using 8-bit transfer.
  * This is done by transferring eight 9-bit words in 9 bytes.
  *
+ * Modified to support RGB666 (18-bit) mode with 24-bit RGB888 framebuffer
+ * Device Tree property 'bgr' controls hardware BGR mode:
+ *   - Set 'bgr' property to enable RGB->BGR conversion in hardware
+ *   - Omit 'bgr' property for native RGB mode (no conversion)
+ *
+ *
  * Copyright (C) 2013 Christian Vogelgsang
  * Based on adafruit22fb.c by Noralf Tronnes
  */
 
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/init.h>
+#include <linux/types.h>
+#include <linux/completion.h>
 #include <linux/delay.h>
+#include <linux/device.h>
+#include <linux/errno.h>
+#include <linux/gpio/consumer.h>
+#include <linux/init.h>
+#include <linux/jiffies.h>
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/mutex.h>
+#include <linux/spinlock.h>
+#include <linux/slab.h>
+#include <linux/spi/spi.h>
+#include <linux/stddef.h>
+#include <linux/wait.h>
 #include <video/mipi_display.h>
 
 #include "fbtft.h"
@@ -23,11 +41,312 @@
 #define WIDTH		320
 #define HEIGHT		240
 #define TXBUFLEN	(4 * PAGE_SIZE)
+#define ILI9341_DMA_BUF_COUNT	3
+#define ILI9341_DMA_BUF_SIZE	(16 * 1024)
+#define ILI9341_DMA_TIMEOUT_MS	1000
+#define ILI9341_DMA_FLUSH_TIMEOUT_MS	5000
 #define DEFAULT_GAMMA	"1F 1A 18 0A 0F 06 45 87 32 0A 07 02 07 05 00\n" \
 			"00 25 27 05 10 09 3A 78 4D 05 18 0D 38 3A 1F"
 
+struct ili9341_dma;
+
+struct ili9341_dma_buf {
+	struct ili9341_dma *parent;
+	void *cpu_addr;
+	size_t capacity;
+	struct spi_transfer transfer;
+	struct spi_message message;
+	struct completion completion;
+	unsigned int busy;
+};
+
+struct ili9341_dma {
+	struct fbtft_par *par;
+	struct device *dev;
+	struct ili9341_dma_buf bufs[ILI9341_DMA_BUF_COUNT];
+	unsigned int next;
+	size_t chunk_size;
+	int pending;
+	spinlock_t pending_lock;
+	wait_queue_head_t wait;
+	struct mutex lock;
+};
+
+static void ili9341_spi_complete(void *context)
+{
+	struct ili9341_dma_buf *buf = context;
+	struct ili9341_dma *dma = buf->parent;
+	int status = buf->message.status;
+	unsigned long flags;
+
+	if (status)
+		dev_err(dma->dev, "spi_async transfer failed: %d\n", status);
+
+	buf->busy = 0;
+	complete(&buf->completion);
+
+	spin_lock_irqsave(&dma->pending_lock, flags);
+	if (dma->pending > 0)
+		dma->pending--;
+	if (!dma->pending)
+		wake_up(&dma->wait);
+	spin_unlock_irqrestore(&dma->pending_lock, flags);
+}
+
+static struct ili9341_dma_buf *ili9341_dma_acquire(struct ili9341_dma *dma)
+{
+	for (;;) {
+		struct ili9341_dma_buf *buf = &dma->bufs[dma->next];
+		unsigned long timeout;
+
+		dma->next = (dma->next + 1) % ARRAY_SIZE(dma->bufs);
+
+		if (!buf->busy)
+			return buf;
+
+		timeout = wait_for_completion_timeout(&buf->completion,
+				 msecs_to_jiffies(ILI9341_DMA_TIMEOUT_MS));
+		if (!timeout) {
+			dev_err(dma->dev, "timeout waiting for DMA buffer\n");
+			return NULL;
+		}
+	}
+}
+
+static int ili9341_dma_queue(struct ili9341_dma *dma,
+			      struct ili9341_dma_buf *buf,
+			      const u8 *src, size_t len)
+{
+	int ret;
+	unsigned long flags;
+
+	if (len > buf->capacity)
+		return -EINVAL;
+
+	memcpy(buf->cpu_addr, src, len);
+
+	memset(&buf->transfer, 0, sizeof(buf->transfer));
+	buf->transfer.tx_buf = buf->cpu_addr;
+	buf->transfer.len = len;
+
+	spi_message_init(&buf->message);
+	buf->message.complete = ili9341_spi_complete;
+	buf->message.context = buf;
+	spi_message_add_tail(&buf->transfer, &buf->message);
+
+	reinit_completion(&buf->completion);
+	buf->busy = 1;
+	spin_lock_irqsave(&dma->pending_lock, flags);
+	dma->pending++;
+	spin_unlock_irqrestore(&dma->pending_lock, flags);
+
+	ret = spi_async(dma->par->spi, &buf->message);
+	if (ret) {
+		buf->busy = 0;
+		spin_lock_irqsave(&dma->pending_lock, flags);
+		if (dma->pending > 0)
+			dma->pending--;
+		spin_unlock_irqrestore(&dma->pending_lock, flags);
+		complete(&buf->completion);
+	}
+
+	return ret;
+}
+
+static bool ili9341_dma_has_pending(struct ili9341_dma *dma)
+{
+	unsigned long flags;
+	bool pending;
+
+	spin_lock_irqsave(&dma->pending_lock, flags);
+	pending = dma->pending != 0;
+	spin_unlock_irqrestore(&dma->pending_lock, flags);
+
+	return pending;
+}
+
+static int ili9341_dma_wait_idle(struct ili9341_dma *dma)
+{
+	if (!ili9341_dma_has_pending(dma))
+		return 0;
+
+	if (!wait_event_timeout(dma->wait,
+			!ili9341_dma_has_pending(dma),
+			msecs_to_jiffies(ILI9341_DMA_FLUSH_TIMEOUT_MS))) {
+		dev_err(dma->dev, "timeout waiting for SPI queue flush\n");
+		return -ETIMEDOUT;
+	}
+
+	return 0;
+}
+
+static int ili9341_dma_write(struct ili9341_dma *dma, const u8 *vmem,
+				 size_t len)
+{
+	size_t remain = len;
+	bool queued = false;
+	int ret = 0;
+
+	mutex_lock(&dma->lock);
+
+	while (remain) {
+		struct ili9341_dma_buf *buf;
+		size_t chunk = min_t(size_t, dma->chunk_size, remain);
+
+		buf = ili9341_dma_acquire(dma);
+		if (!buf) {
+			ret = -ETIMEDOUT;
+			goto out_unlock;
+		}
+
+		ret = ili9341_dma_queue(dma, buf, vmem, chunk);
+		if (ret)
+			goto out_unlock;
+
+		vmem += chunk;
+		remain -= chunk;
+		queued = true;
+	}
+
+out_unlock:
+	if (queued) {
+		int flush = ili9341_dma_wait_idle(dma);
+
+		if (!ret && flush)
+			ret = flush;
+	}
+
+	mutex_unlock(&dma->lock);
+	return ret;
+}
+
+static int ili9341_cpu_write(struct fbtft_par *par, size_t offset,
+			       const u8 *vmem, size_t len)
+{
+	u8 *vmem8;
+	u8 *txbuf = par->txbuf.buf;
+	size_t remain;
+	size_t to_copy;
+	size_t tx_array_size;
+	int ret = 0;
+
+	fbtft_par_dbg(DEBUG_WRITE_VMEM, par, "%s(offset=%zu, len=%zu)\n",
+		      __func__, offset, len);
+
+	remain = len;
+	vmem8 = (u8 *)vmem;
+
+	/* non buffered write */
+	if (!par->txbuf.buf)
+		return par->fbtftops.write(par, (void *)vmem8, len);
+
+	/* buffered write */
+	tx_array_size = par->txbuf.len;
+
+	while (remain) {
+		to_copy = min(tx_array_size, remain);
+		dev_dbg(par->info->device, "to_copy=%zu, remain=%zu\n",
+			to_copy, remain - to_copy);
+
+		memcpy(txbuf, vmem8, to_copy);
+
+		vmem8 += to_copy;
+		ret = par->fbtftops.write(par, txbuf, to_copy);
+		if (ret < 0)
+			return ret;
+		remain -= to_copy;
+	}
+
+	return ret;
+}
+
+static int ili9341_dma_setup(struct fbtft_par *par)
+{
+	struct device *dev = par->info->device;
+	struct ili9341_dma *dma;
+	size_t base_chunk;
+	int i;
+
+	if (!par->spi)
+		return -ENODEV;
+
+	if (par->extra)
+		return 0;
+
+	dma = devm_kzalloc(dev, sizeof(*dma), GFP_KERNEL);
+	if (!dma)
+		return -ENOMEM;
+
+	dma->par = par;
+	dma->dev = dev;
+	dma->next = 0;
+	mutex_init(&dma->lock);
+	init_waitqueue_head(&dma->wait);
+	spin_lock_init(&dma->pending_lock);
+	dma->pending = 0;
+
+	base_chunk = par->txbuf.len ? par->txbuf.len : ILI9341_DMA_BUF_SIZE;
+	dma->chunk_size = max_t(size_t, base_chunk, ILI9341_DMA_BUF_SIZE);
+
+	for (i = 0; i < ARRAY_SIZE(dma->bufs); i++) {
+		struct ili9341_dma_buf *buf = &dma->bufs[i];
+
+		buf->parent = dma;
+		buf->capacity = dma->chunk_size;
+		buf->cpu_addr = devm_kmalloc(dev, buf->capacity,
+					     GFP_KERNEL | GFP_DMA);
+		if (!buf->cpu_addr)
+			return -ENOMEM;
+
+		init_completion(&buf->completion);
+		complete(&buf->completion);
+		buf->busy = 0;
+	}
+
+	par->extra = dma;
+	return 0;
+}
+
+static int write_vmem24_bus8(struct fbtft_par *par, size_t offset, size_t len)
+{
+	struct ili9341_dma *dma = par->extra;
+	const u8 *vmem8;
+	int ret;
+
+	if (!len)
+		return 0;
+
+	vmem8 = (u8 *)(par->info->screen_buffer + offset);
+
+	if (par->gpio.dc)
+		gpiod_set_value(par->gpio.dc, 1);
+
+	if (dma && par->spi) {
+		ret = ili9341_dma_write(dma, vmem8, len);
+		if (!ret)
+			return 0;
+
+		if (ret == -ETIMEDOUT)
+			return ret;
+
+		dev_warn(par->info->device,
+			 "DMA transfer failed (%d), falling back to CPU path\n",
+			 ret);
+	}
+
+	return ili9341_cpu_write(par, offset, vmem8, len);
+}
+
 static int init_display(struct fbtft_par *par)
 {
+	int ret;
+
+	ret = ili9341_dma_setup(par);
+	if (ret)
+		dev_warn(par->info->device,
+			 "DMA triple-buffering unavailable, falling back: %d\n",
+			 ret);
+
 	par->fbtftops.reset(par);
 
 	/* startup sequence for MI0283QT-9A */
@@ -48,7 +367,7 @@ static int init_display(struct fbtft_par *par)
 	write_reg(par, 0xC5, 0x35, 0x3E);
 	write_reg(par, 0xC7, 0xBE);
 	/* ------------memory access control------------------------ */
-	write_reg(par, MIPI_DCS_SET_PIXEL_FORMAT, 0x55); /* 16bit pixel */
+	write_reg(par, MIPI_DCS_SET_PIXEL_FORMAT, 0x66); /* DPI=DBI=6h */
 	/* ------------frame rate----------------------------------- */
 	write_reg(par, 0xB1, 0x00, 0x1B);
 	/* ------------Gamma---------------------------------------- */
@@ -80,26 +399,25 @@ static void set_addr_win(struct fbtft_par *par, int xs, int ys, int xe, int ye)
 #define MEM_X   BIT(6) /* MX column address order */
 #define MEM_V   BIT(5) /* MV row / column exchange */
 #define MEM_L   BIT(4) /* ML vertical refresh order */
+#define MEM_BGR BIT(3) /* RGB-BGR Order */
 #define MEM_H   BIT(2) /* MH horizontal refresh order */
-#define MEM_BGR (3) /* RGB-BGR Order */
 static int set_var(struct fbtft_par *par)
 {
 	switch (par->info->var.rotate) {
 	case 0:
-		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE,
-			   (par->bgr << MEM_BGR));
+		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE, MEM_BGR);
 		break;
 	case 270:
 		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE,
-			  MEM_V | MEM_X | MEM_L | (par->bgr << MEM_BGR));
+			  MEM_V | MEM_X | MEM_L | MEM_BGR);
 		break;
 	case 180:
 		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE,
-			  MEM_Y | MEM_X | (par->bgr << MEM_BGR));
+			  MEM_Y | MEM_X | MEM_BGR);
 		break;
 	case 90:
 		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE,
-			  MEM_Y | MEM_V | (par->bgr << MEM_BGR));
+			  MEM_Y | MEM_V | MEM_BGR);
 		break;
 	}
 
@@ -137,11 +455,13 @@ static struct fbtft_display display = {
 	.gamma_num = 2,
 	.gamma_len = 15,
 	.gamma = DEFAULT_GAMMA,
+	.bpp = 24, /* 24 bpp for RGB888 native support */
 	.fbtftops = {
 		.init_display = init_display,
 		.set_addr_win = set_addr_win,
 		.set_var = set_var,
 		.set_gamma = set_gamma,
+		.write_vmem = write_vmem24_bus8,
 	},
 };
 

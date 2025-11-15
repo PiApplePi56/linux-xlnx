@@ -98,14 +98,17 @@
 
 &spi0 {
 	status = "okay";
+    assigned-clocks = <&clkc 25>;          /* spi0_ref_clk */
+    assigned-clock-rates = <333333333>;
 	display@0{
     	compatible = "ilitek,ili9341";
     	reg = <0>;
-    	spi-max-frequency = <166666666>;
+		bgr;  
+    	spi-max-frequency = <333333333>;
     	reset-gpios = <&gpio0 61 GPIO_ACTIVE_LOW>;
     	dc-gpios = <&gpio0 62 GPIO_ACTIVE_HIGH>;
     	rotate = <0>;
-		fps = <60>;
+		fps = <30>;
     	led-gpios = <&gpio0 63 GPIO_ACTIVE_HIGH>;
 		buswidth = <8>;
 		vcc = <&vcc_3v3>;
