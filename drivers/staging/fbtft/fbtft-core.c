@@ -674,15 +674,49 @@ struct fb_info *fbtft_framebuffer_alloc(struct fbtft_display *display,
 	info->var.bits_per_pixel = bpp;
 	info->var.nonstd =         1;
 
-	/* RGB565 */
-	info->var.red.offset =     11;
-	info->var.red.length =     5;
-	info->var.green.offset =   5;
-	info->var.green.length =   6;
-	info->var.blue.offset =    0;
-	info->var.blue.length =    5;
-	info->var.transp.offset =  0;
-	info->var.transp.length =  0;
+	switch (bpp) {
+	case 24:
+		info->var.red.offset =     16;
+		info->var.red.length =     8;
+		info->var.green.offset =   8;
+		info->var.green.length =   8;
+		info->var.blue.offset =    0;
+		info->var.blue.length =    8;
+		info->var.transp.offset =  0;
+		info->var.transp.length =  0;
+		break;
+	case 18:
+		info->var.red.offset =     12;
+		info->var.red.length =     6;
+		info->var.green.offset =   6;
+		info->var.green.length =   6;
+		info->var.blue.offset =    0;
+		info->var.blue.length =    6;
+		info->var.transp.offset =  0;
+		info->var.transp.length =  0;
+		break;
+	case 32:
+		info->var.red.offset =     16;
+		info->var.red.length =     8;
+		info->var.green.offset =   8;
+		info->var.green.length =   8;
+		info->var.blue.offset =    0;
+		info->var.blue.length =    8;
+		info->var.transp.offset =  24;
+		info->var.transp.length =  8;
+		break;
+	default:
+		/* RGB565 fallback */
+		info->var.red.offset =     11;
+		info->var.red.length =     5;
+		info->var.green.offset =   5;
+		info->var.green.length =   6;
+		info->var.blue.offset =    0;
+		info->var.blue.length =    5;
+		info->var.transp.offset =  0;
+		info->var.transp.length =  0;
+		break;
+	}
 
 	info->flags =              FBINFO_FLAG_DEFAULT | FBINFO_VIRTFB;
 
