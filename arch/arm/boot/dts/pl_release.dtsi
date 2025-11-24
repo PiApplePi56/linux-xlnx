@@ -95,7 +95,7 @@
 			compatible = "fixed-clock";
 		};
 
-		camera_in_v_frmbuf_wr_rgb: v_frmbuf_wr@43c20000 {
+		camera_in_v_frmbuf_wr_rgb: cam_preview {
 			#dma-cells = <1>;
 			clock-names = "ap_clk";
 			clocks = <&vid_apclk>;
@@ -103,7 +103,7 @@
 			interrupt-names = "interrupt";
 			interrupt-parent = <&intc>;
 			interrupts = <0 55 4>;
-			reg = <0x43c20000 0x10000>;
+			reg = <0x83c20000 0x10000>;
 			reset-gpios = <&rst_gpio 7 1>;
 			xlnx,dma-addr-width = <32>;
 			xlnx,dma-align = <16>;
@@ -157,14 +157,14 @@
 				};
 			};
 		};
-		camera_in_demosaic: v_demosaic@43c10000 {
+		camera_in_demosaic: demosaic {
 			clock-names = "ap_clk";
 			clocks = <&vid_apclk>;
 			compatible = "xlnx,v-demosaic-1.1", "xlnx,v-demosaic";
 			interrupt-names = "interrupt";
 			interrupt-parent = <&intc>;
 			interrupts = <0 30 4>;
-			reg = <0x43c10000 0x10000>;
+			reg = <0x83c10000 0x10000>;
 			reset-gpios = <&rst_gpio 3 1>;
 			xlnx,max-height = <3072>;
 			xlnx,max-width = <4096>;
@@ -193,14 +193,14 @@
 				};
 			};
 		};
-		camera_in_gamma_lut: v_gamma_lut@43cb0000 {
+		camera_in_gamma_lut: gamma_lut{
 			clock-names = "ap_clk";
 			clocks = <&vid_apclk>;
 			compatible = "xlnx,v-gamma-lut-1.1", "xlnx,v-gamma-lut";
 			interrupt-names = "interrupt";
 			interrupt-parent = <&intc>;
 			interrupts = <0 29 4>;
-			reg = <0x43cb0000 0x10000>;
+			reg = <0x83cb0000 0x10000>;
 			reset-gpios = <&rst_gpio 2 1>;
 			xlnx,max-height = <3072>;
 			xlnx,max-width = <4096>;
@@ -225,7 +225,7 @@
 				};
 			};
 		};
-		camera_in_frmbuf_wr: v_frmbuf_wr@43c40000 {
+		camera_in_frmbuf_wr: cam_capture {
 			#dma-cells = <1>;
 			clock-names = "ap_clk";
 			clocks = <&vid_apclk>;
@@ -233,7 +233,7 @@
 			interrupt-names = "interrupt";
 			interrupt-parent = <&intc>;
 			interrupts = <0 31 4>;
-			reg = <0x43c40000 0x10000>;
+			reg = <0x83c40000 0x10000>;
 			reset-gpios = <&rst_gpio 0 1>;
 			xlnx,dma-addr-width = <32>;
 			xlnx,dma-align = <16>;
@@ -368,7 +368,7 @@
 			};
 		};
 
-		camera_in_scaler_display: v_proc_ss@43d00000 {
+		camera_in_scaler_display: vpss_scaler {
 			clock-names = "aclk_axis", "aclk_ctrl";
 			clocks = <&vid_apclk>, <&clkc 15>;
 			compatible = "xlnx,v-vpss-scaler-2.2";
@@ -416,11 +416,11 @@
 			};
 		};
 
-		camera_in_vpss: v_proc_ss@43cc0000 {
+		camera_in_vpss: vpss_csc {
 			clock-names = "aclk";
 			clocks = <&vid_apclk>;
 			compatible = "xlnx,v-vpss-csc";
-			reg = <0x43cc0000 0x10000>;
+			reg = <0x83cc0000 0x10000>;
 			reset-gpios = <&rst_gpio 6 1>;
 			xlnx,colorspace-support = <0>;
 			xlnx,csc-enable-window = "false";
