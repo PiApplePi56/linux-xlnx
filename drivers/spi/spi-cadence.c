@@ -7,6 +7,7 @@
  * based on Blackfin On-Chip SPI Driver (spi_bfin5xx.c)
  */
 
+#include "linux/compiler.h"
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/gpio/consumer.h>
@@ -302,26 +303,22 @@ static int cdns_spi_setup_transfer(struct spi_device *spi,
  */
 static void cdns_spi_fill_tx_fifo(struct cdns_spi *xspi)
 {
-	unsigned long trans_cnt = 0;
+    unsigned long trans_cnt = 0;
+    unsigned long count;
 
-	while ((trans_cnt < xspi->tx_fifo_depth) &&
-	       (xspi->tx_bytes > 0)) {
+    /* Calculate how many bytes we can write to the FIFO */
+    count = (xspi->tx_bytes > xspi->tx_fifo_depth) ?
+        xspi->tx_fifo_depth : xspi->tx_bytes;
 
-		/* When xspi in busy condition, bytes may send failed,
-		 * then spi control did't work thoroughly, add one byte delay
-		 */
-		if (cdns_spi_read(xspi, CDNS_SPI_ISR) &
-		    CDNS_SPI_IXR_TXFULL)
-			udelay(10);
+    while (trans_cnt < count) {
+        if (xspi->txbuf)
+            cdns_spi_write(xspi, CDNS_SPI_TXD, *xspi->txbuf++);
+        else
+            cdns_spi_write(xspi, CDNS_SPI_TXD, 0);
 
-		if (xspi->txbuf)
-			cdns_spi_write(xspi, CDNS_SPI_TXD, *xspi->txbuf++);
-		else
-			cdns_spi_write(xspi, CDNS_SPI_TXD, 0);
-
-		xspi->tx_bytes--;
-		trans_cnt++;
-	}
+        xspi->tx_bytes--;
+        trans_cnt++;
+    }
 }
 
 /**
@@ -349,7 +346,7 @@ static irqreturn_t cdns_spi_irq(int irq, void *dev_id)
 	intr_status = cdns_spi_read(xspi, CDNS_SPI_ISR);
 	cdns_spi_write(xspi, CDNS_SPI_ISR, intr_status);
 
-	if (intr_status & CDNS_SPI_IXR_MODF) {
+	if (unlikely(intr_status & CDNS_SPI_IXR_MODF)) {
 		/* Indicate that transfer is completed, the SPI subsystem will
 		 * identify the error as the remaining bytes to be
 		 * transferred is non-zero
@@ -357,7 +354,7 @@ static irqreturn_t cdns_spi_irq(int irq, void *dev_id)
 		cdns_spi_write(xspi, CDNS_SPI_IDR, CDNS_SPI_IXR_DEFAULT);
 		spi_finalize_current_transfer(master);
 		status = IRQ_HANDLED;
-	} else if (intr_status & CDNS_SPI_IXR_TXOW) {
+	} else if (likely(intr_status & CDNS_SPI_IXR_TXOW)) {
 		unsigned long trans_cnt;
 
 		trans_cnt = xspi->rx_bytes - xspi->tx_bytes;
