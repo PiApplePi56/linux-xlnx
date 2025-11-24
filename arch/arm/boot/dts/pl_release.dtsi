@@ -255,27 +255,6 @@
 			xlnx,nr-outputs = <1>;
 			xlnx,speed-grade = <2>;
 		};
-		hdmi_out_clk_wiz_dyn: clk_wiz@43c80000 {
-			#clock-cells = <1>;
-			clock-names = "s_axi_aclk", "clk_in1";
-			clock-output-names = "0x43c80000-hdmi_pclk", "0x43c80000-hdmi_pclk_5x";
-			clocks = <&clkc 15>, <&clkc 15>;
-			compatible = "xlnx,clk-wiz-6.0", "xlnx,clocking-wizard";
-			reg = <0x43c80000 0x10000>;
-			xlnx,nr-outputs = <2>;
-			xlnx,speed-grade = <2>;
-		};
-		i2c_camera: i2c@41600000 {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			clock-names = "s_axi_aclk";
-			clocks = <&clkc 15>;
-			compatible = "xlnx,axi-iic-2.1", "xlnx,xps-iic-2.00.a";
-			interrupt-names = "iic2intc_irpt";
-			interrupt-parent = <&intc>;
-			interrupts = <0 32 4>;
-			reg = <0x41600000 0x10000>;
-		};
 		rst_gpio: gpio@41220000 {
 			#gpio-cells = <2>;
 			clock-names = "s_axi_aclk";
@@ -297,7 +276,7 @@
 			xlnx,tri-default-2 = <0xFFFFFFFF>;
 		};
 	
-		camera_in_axis_broadcaster_0: axis_broadcastercamera_in_axis_broadcaster_0@0 {
+		camera_in_axis_broadcaster_0: axis_broadcaster {
 			compatible = "xlnx,axis-broadcaster-1.1";
 			axis_broadcaster_portscamera_in_axis_broadcaster_0: ports {
 				#address-cells = <1>;
