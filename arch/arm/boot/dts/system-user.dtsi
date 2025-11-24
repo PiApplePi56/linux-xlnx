@@ -17,24 +17,22 @@
 
 		gpio-led1 {
 			label = "pl_led1";
-			gpios = <&axi_gpio_0 0 0 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpio0 64 GPIO_ACTIVE_HIGH>;
 			linux,default-trigger = "heartbeat";
 			
 		};
 
 		gpio-led2 {
 			label = "pl_led2";
-			gpios = <&axi_gpio_0 1 0 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpio0 65 GPIO_ACTIVE_HIGH>;
 			default-state = "off";
 		};
 
-
-	};
-
-	userled {
-		compatible = "user-gpio";
-		default-state = "on";
-		gpios = <&axi_gpio_0 2 0 GPIO_ACTIVE_HIGH>;
+		gpio-led3 {
+			label = "pl_led3";
+			gpios = <&gpio0 66 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
 	};
 
 	keys {
@@ -218,10 +216,6 @@
 
 &i2c0 {
 	status = "okay";
-};
-
-&i2c_camera {
-
 	ov5647@36 {
 		compatible = "ovti,ov5647";
 		reg = <0x36>;
@@ -249,64 +243,10 @@
 	audio-codec = <&codec>;
 };
 
-&clk_wiz_0 {
-    compatible = "xlnx,clocking-wizard";
-    xlnx,nr-outputs = <1>;
-};
-
-
-&hdmi_out_clk_wiz_dyn{
-    compatible = "xlnx,clocking-wizard";
-    xlnx,nr-outputs = <2>;
-};
-
-&hdmi_out_hdmi_vtc {
-	compatible = "xlnx,bridge-v-tc-6.1";
-	xlnx,pixels-per-clock = <1>;
-};
-
-
 &amba_pl {
-
-	drm_pl_disp_hdmi {
-		compatible = "xlnx,pl-disp";
-		dmas = <&hdmi_out_v_frmbuf_rd_0 0>;
-		dma-names = "dma0";
-		xlnx,vformat = "BG24";
-		xlnx,bridge = <&hdmi_out_hdmi_vtc>;
-
-		ports {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			port@0 {
-				reg = <0>;
-				pl_disp_crtc_hdmi:endpoint {
-					remote-endpoint = <&hdmi_encoder>;
-				};
-			};
-		};
-	};
-
-	hdmi_drm{
-		
-		compatible = "dglnt,dglnt-hdmi";
-		status = "okay";
-
-		clocks = <&hdmi_pclk>, <&hdmi_pclk_5x>;
-		clock-names = "hdmi_pclk", "hdmi_pclk_5x";
-    	clk-num = <2>;															
-		ddc-i2c-bus = <&i2c0>;
-		hpd-gpios = <&gpio0 55 GPIO_ACTIVE_HIGH>;
-
-		ports {
-				#address-cells = <1>;
-				#size-cells = <0>;
-			port@0 {
-				reg = <0>;
-				hdmi_encoder: endpoint {
-					remote-endpoint = <&pl_disp_crtc_hdmi>;
-				};
-			};
-		};
+	sensor_clk: sensor_clk {
+		#clock-cells = <0>;
+		clock-frequency = <25000000>;
+		compatible = "fixed-clock";
 	};
 };

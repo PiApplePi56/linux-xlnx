@@ -265,51 +265,6 @@
 			xlnx,nr-outputs = <2>;
 			xlnx,speed-grade = <2>;
 		};
-		hdmi_out_hdmi_vtc: v_tc@43c90000 {
-			clock-names = "clk", "s_axi_aclk";
-			clocks = <&hdmi_pclk>, <&clkc 15>;
-			compatible = "xlnx,v-tc-6.2", "xlnx,v-tc-6.1";
-			interrupt-names = "irq";
-			interrupt-parent = <&intc>;
-			interrupts = <0 53 4>;
-			reg = <0x43c90000 0x10000>;
-			xlnx,generator ;
-		};
-		hdmi_pclk: hdmi_pclk {
-			#clock-cells = <0>;
-			clock-frequency = <148500000>;
-			compatible = "fixed-clock";
-		};
-		hdmi_pclk_5x: hdmi_pclk_5x {
-			#clock-cells = <0>;
-			clock-frequency = <742500000>;
-			compatible = "fixed-clock";
-		};
-		sensor_clk: sensor_clk {
-			#clock-cells = <0>;
-			clock-frequency = <25000000>;
-			compatible = "fixed-clock";
-		};
-		hdmi_out_v_frmbuf_rd_0: v_frmbuf_rd@43ca0000 {
-			#dma-cells = <1>;
-			clock-names = "ap_clk";
-			clocks = <&hdmi_pclk>;
-			compatible = "xlnx,axi-frmbuf-rd-v2.2";
-			interrupt-names = "interrupt";
-			interrupt-parent = <&intc>;
-			interrupts = <0 52 4>;
-			reg = <0x43ca0000 0x10000>;
-			reset-gpios = <&rst_gpio 5 1>;
-			xlnx,dma-addr-width = <32>;
-			xlnx,dma-align = <8>;
-			xlnx,max-height = <1080>;
-			xlnx,max-width = <1920>;
-			xlnx,pixels-per-clock = <1>;
-			xlnx,s-axi-ctrl-addr-width = <0x7>;
-			xlnx,s-axi-ctrl-data-width = <0x20>;
-			xlnx,vid-formats = "rgb888", "bgr888";
-			xlnx,video-width = <8>;
-		};
 		i2c_camera: i2c@41600000 {
 			#address-cells = <1>;
 			#size-cells = <0>;
